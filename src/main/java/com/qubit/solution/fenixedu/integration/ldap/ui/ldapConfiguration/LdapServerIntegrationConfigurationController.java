@@ -128,7 +128,7 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
             @PathVariable("oid") LdapServerIntegrationConfiguration ldapServerIntegrationConfiguration, Model model) {
 
         ldapServerIntegrationConfiguration.configureAsDefault();
-        return "redirect:/ldap/ldapconfiguration/ldapserverintegrationconfiguration/";
+        return search(null, null, model);
     }
 
     @RequestMapping(value = "/search/testconnection/{oid}")
@@ -144,7 +144,7 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
             addErrorMessage("Unable to log to server" + ldapServerIntegrationConfiguration.getServerID()
                     + ", check error log for more information", model);
         }
-        return "redirect:/ldap/ldapconfiguration/ldapserverintegrationconfiguration/";
+        return search(null, null, model);
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.GET)
