@@ -48,8 +48,24 @@
 
 	<repositories>
 		<repository>
+			<id>ulisboa-repo</id>
+			<url>http://ul-nexjen.ulisboa.pt:8081/nexus/content/groups/public/</url>
+		</repository>
+		<repository>
 			<id>fenixedu-maven-repository</id>
 			<url>https://repo.fenixedu.org/fenixedu-maven-repository</url>
 		</repository>
 	</repositories>
+
+	<distributionManagement>
+		<repository>
+			<id>ulisboa-repo</id>
+			<url>http://ul-nexjen.ulisboa.pt:8081/nexus/content/repositories/releases/</url>
+		</repository>
+		<snapshotRepository>
+			<id>ulisboa-repo</id>
+			<url>http://ul-nexjen.ulisboa.pt:8081/nexus/content/repositories/snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
+
 </project>
