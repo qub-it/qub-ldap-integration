@@ -28,12 +28,21 @@ package com.qubit.solution.fenixedu.integration.ldap.service;
 
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.fenixedu.academic.domain.Country;
 import org.fenixedu.academic.domain.Person;
+import org.fenixedu.academic.domain.contacts.EmailAddress;
+import org.fenixedu.academic.domain.contacts.PartyContact;
+import org.fenixedu.academic.domain.contacts.PartyContactType;
 import org.fenixedu.academic.domain.contacts.PhysicalAddress;
+import org.fenixedu.academic.domain.person.Gender;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
 import org.joda.time.YearMonthDay;
+import org.springframework.format.datetime.joda.DateTimeFormatterFactory;
+
+import pt.ist.fenixframework.Atomic;
 
 import com.qubit.solution.fenixedu.integration.ldap.domain.configuration.LdapServerIntegrationConfiguration;
 import com.qubit.terra.ldapclient.AttributesMap;
@@ -58,25 +67,33 @@ public class LdapIntegration {
     private static final String UL_BIRTH_DATE_ATTRIBUTE = "ULBirthDate";
     private static final String UL_TEACHER_ACTIVE_ATTRIBUTE = "ULTeacherActive";
     private static final String UL_EMPLOYEE_ACTIVE_ATTRIBUTE = "ULEmployeeActive";
-    private static final String ULBI_ATTRIBUTE = "ULBI";
+    private static final String UL_BI_ATTRIBUTE = "ULBI";
     private static final String CO_ATTRIBUTE = "co";
     private static final String UL_SEX_ATTRIBUTE = "ULSex";
     private static final String LAST_NAME_ATTRIBUTE = "sn";
     private static final String GIVEN_NAME_ATTRIBUTE = "givenName";
     private static final String FULL_NAME_ATTRIBUTE = "FullName";
-    private static final String DESCRIPTION_ATTRIBUTE = "description";
+
+    // From ULFenixUser class
     private static final String UL_FENIXUSER = "ULFenixUser";
+    private static final String UL_FENIXUSER_ALIGNED = "ULFenixUserAligned";
 
-    private static final String UL_USER_ID = "ULUserId";
+    private static final String USER_PASSWORD = "userPassword";
 
-    private static String[] OBJECT_CLASSES_TO_ADD = { "person", "ULAuxUser" };
+    private static String[] OBJECT_CLASSES_TO_ADD = { "person", "ULAuxUser", "ULFenixUser" };
+    private static String[] OBJECT_CLASSES_TO_ADD_TEMP_USER = { "person", "ULFenixUser" };
 
     private static String getSchoolCode() {
         return "FMV"; // Bennu.getInstance().getInstitutionUnit().getAcronym();
     }
 
+    private static String getObjectCommonName(String username, LdapServerIntegrationConfiguration configuration) {
+        return "cn=" + username + "," + configuration.getBaseDomain();
+
+    }
+
     private static String getPersonCommonName(Person person, LdapServerIntegrationConfiguration configuration) {
-        return "cn=" + getSchoolCode() + "-" + person.getUsername() + ",ou=people," + configuration.getBaseDomain();
+        return getObjectCommonName(person.getUsername(), configuration);
     }
 
     private static AttributesMap collectAttributeMap(Person person) {
@@ -93,19 +110,18 @@ public class LdapIntegration {
         attributesMap.add(UL_TEACHER_ACTIVE_ATTRIBUTE + schooldCode, String.valueOf(isTeacher).toUpperCase());
         attributesMap.add(UL_EMPLOYEE_ACTIVE_ATTRIBUTE + schooldCode, String.valueOf(isEmployee).toUpperCase());
         attributesMap.add(FULL_NAME_ATTRIBUTE, person.getName());
-        String[] split = person.getName().split(" ");
-        attributesMap.add(GIVEN_NAME_ATTRIBUTE, split[0]);
-        attributesMap.add(LAST_NAME_ATTRIBUTE, split[split.length - 1]);
-        attributesMap.add(ULBI_ATTRIBUTE, person.getDocumentIdNumber());
+        attributesMap.add(GIVEN_NAME_ATTRIBUTE, person.getProfile().getGivenNames());
+        attributesMap.add(LAST_NAME_ATTRIBUTE, person.getProfile().getFamilyNames());
+        attributesMap.add(UL_BI_ATTRIBUTE, person.getDocumentIdNumber());
         YearMonthDay dateOfBirthYearMonthDay = person.getDateOfBirthYearMonthDay();
         if (dateOfBirthYearMonthDay != null) {
-            attributesMap.add(UL_BIRTH_DATE_ATTRIBUTE, dateOfBirthYearMonthDay.toString("yyyyMMdd") + "000000.000Z");
+            attributesMap.add(UL_BIRTH_DATE_ATTRIBUTE, dateOfBirthYearMonthDay.toString("yyyyMMdd") + "000000Z");
         } else {
-            attributesMap.add(UL_BIRTH_DATE_ATTRIBUTE, new DateTime().toString("yyyyMMddDDmmss.SSS") + "Z");
+            attributesMap.add(UL_BIRTH_DATE_ATTRIBUTE, new DateTime().toString("yyyyMMddHHmmss.SSS") + "Z");
         }
-        attributesMap.add(UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, person.getInstitutionalEmailAddressValue());
 
         // OPTIONAL
+        attributesMap.add(UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, person.getInstitutionalEmailAddressValue());
         attributesMap.add(UL_SEX_ATTRIBUTE, person.getGender().toString().substring(0, 1));
         Country countryOfBirth = person.getCountryOfBirth();
         if (countryOfBirth != null) {
@@ -129,6 +145,7 @@ public class LdapIntegration {
         }
 
         attributesMap.add(UL_FENIXUSER, person.getUsername());
+        attributesMap.add(UL_FENIXUSER_ALIGNED, "FALSE");
         return attributesMap;
     }
 
@@ -141,54 +158,168 @@ public class LdapIntegration {
         return defaultLdapServerIntegrationConfiguration;
     }
 
+    public static boolean createTemporaryUser(String username, String password) {
+        return createTemporaryUser(username, password, getDefaultConfiguration());
+    }
+
+    public static boolean createTemporaryUser(String username, String password, LdapServerIntegrationConfiguration configuration) {
+        AttributesMap attributesMap = new AttributesMap();
+        attributesMap.add(UL_FENIXUSER, username);
+        attributesMap.add(USER_PASSWORD, password);
+        attributesMap.add(UL_FENIXUSER_ALIGNED, "TRUE");
+
+        boolean ableToSend = false;
+        LdapClient client = configuration.getClient();
+        try {
+            client.writeNewContext(getObjectCommonName(username, configuration), Arrays.asList(OBJECT_CLASSES_TO_ADD_TEMP_USER),
+                    attributesMap);
+            ableToSend = true;
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+        return ableToSend;
+    }
+
+    public static boolean isPersonAvailableInLdap(Person person) {
+        return isPersonAvailableInLdap(person, getDefaultConfiguration());
+    }
+
+    private static boolean isPersonAvailableInLdap(Person person, LdapServerIntegrationConfiguration defaultConfiguration) {
+        LdapClient client = defaultConfiguration.getClient();
+        boolean isAvailable = false;
+        try {
+            if (client.login()) {
+                try {
+                    QueryReply query = client.query("cn=" + person.getUsername(), new String[] { UL_FENIXUSER });
+                    if (query.getNumberOfResults() == 1) {
+                        isAvailable = true;
+                    }
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
+            }
+        } finally {
+            client.logout();
+        }
+
+        return isAvailable;
+    }
+
+    public static boolean readPersonInformationFromLdap(Person person) {
+        return syncPerson(person, getDefaultConfiguration());
+    }
+
+    public static boolean readPersonInformationFromLdap(Person person, LdapServerIntegrationConfiguration configuration) {
+
+        String schoolCode = getSchoolCode();
+        LdapClient client = configuration.getClient();
+        boolean ableToSync = false;
+
+        try {
+            if (client.login()) {
+                try {
+                    QueryReply query =
+                            client.query("cn=" + person.getUsername(), new String[] {
+                                    UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + schoolCode, UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE,
+                                    UL_BIRTH_DATE_ATTRIBUTE, UL_BI_ATTRIBUTE, UL_SEX_ATTRIBUTE, GIVEN_NAME_ATTRIBUTE,
+                                    LAST_NAME_ATTRIBUTE });
+                    if (query.getNumberOfResults() == 1) {
+                        QueryReplyElement queryReplyElement = query.getResults().get(0);
+                        String institutionalEmail =
+                                queryReplyElement.getSimpleAttribute(UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + schoolCode);
+                        String personalEmail = queryReplyElement.getSimpleAttribute(UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE);
+                        String birthDate = queryReplyElement.getSimpleAttribute(UL_BIRTH_DATE_ATTRIBUTE);
+                        String documentID = queryReplyElement.getSimpleAttribute(UL_BI_ATTRIBUTE);
+                        String gender = queryReplyElement.getSimpleAttribute(UL_SEX_ATTRIBUTE);
+                        String givenNames = queryReplyElement.getSimpleAttribute(GIVEN_NAME_ATTRIBUTE);
+                        String surnames = queryReplyElement.getSimpleAttribute(LAST_NAME_ATTRIBUTE);
+                        updatePerson(person, institutionalEmail, personalEmail, birthDate, documentID, gender, givenNames,
+                                surnames);
+                    }
+                    ableToSync = true;
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
+            }
+        } finally {
+            client.logout();
+        }
+        return ableToSync;
+    }
+
+    @Atomic
+    private static void updatePerson(Person person, String instituionalEmail, String personalEmail, String birthDate,
+            String documentID, String sex, String givenNames, String surnames) {
+
+        String institutionalEmailAddressValue = person.getInstitutionalEmailAddressValue();
+        if (!StringUtils.isEmpty(instituionalEmail)
+                && (institutionalEmailAddressValue == null || !institutionalEmailAddressValue.equals(instituionalEmail))) {
+            person.setInstitutionalEmailAddressValue(instituionalEmail);
+        }
+
+        List<? extends PartyContact> personalEmails = person.getPartyContacts(EmailAddress.class, PartyContactType.PERSONAL);
+        if (!StringUtils.isEmpty(personalEmail)
+                && personalEmails.stream().filter(email -> email.getPresentationValue().equals(personalEmail)).count() == 0) {
+            EmailAddress.createEmailAddress(person, personalEmail, PartyContactType.PERSONAL, false);
+        }
+
+        if (!StringUtils.isEmpty(birthDate)) {
+            String format = "yyyyMMddHHmmss'Z'";
+            if (birthDate.contains(".")) {
+                format = "yyyyMMddHHmmss.SSS'Z'";
+            }
+            LocalDate parseLocalDate = new DateTimeFormatterFactory(format).createDateTimeFormatter().parseLocalDate(birthDate);
+            if (!parseLocalDate.isEqual(person.getDateOfBirthYearMonthDay())) {
+                YearMonthDay yearMonthDay =
+                        new YearMonthDay(parseLocalDate.getYear(), parseLocalDate.getMonthOfYear(),
+                                parseLocalDate.getDayOfMonth());
+                person.setDateOfBirthYearMonthDay(yearMonthDay);
+            }
+        }
+
+        if (!StringUtils.isEmpty(documentID) && !person.getDocumentIdNumber().equals(documentID)) {
+            person.setDocumentIdNumber(documentID);
+        }
+
+        if (!StringUtils.isEmpty(sex)) {
+            Gender genderInLdap = "M".equals(sex) ? Gender.MALE : "F".equals(sex) ? Gender.FEMALE : null;
+            if (genderInLdap != null && person.getGender() != genderInLdap) {
+                person.setGender(genderInLdap);
+            }
+        }
+
+        if (!StringUtils.isEmpty(givenNames) && !StringUtils.isEmpty(surnames)
+                && !person.getPartyName().equalInAnyLanguage(givenNames + " " + surnames)) {
+            String displayName = givenNames.split(" ")[0] + " " + surnames.split(" ")[0];
+            person.getProfile().changeName(givenNames, surnames, displayName);
+        }
+
+    }
+
     public static boolean createPersonInLdap(Person person) {
         return createPersonInLdap(person, getDefaultConfiguration());
     }
 
     public static boolean createPersonInLdap(Person person, LdapServerIntegrationConfiguration configuration) {
         boolean ableToSend = false;
-        LdapClient client =
-                new LdapClient(configuration.getUsername(), configuration.getPassword(), configuration.getUrl(),
-                        configuration.getBaseDomain());
+        LdapClient client = configuration.getClient();
         boolean login = client.login();
-        if (login) {
+        try {
+            if (login) {
 
-            List<String> objectClasses = Arrays.asList(OBJECT_CLASSES_TO_ADD);
+                List<String> objectClasses = Arrays.asList(OBJECT_CLASSES_TO_ADD);
 
-            try {
-                client.writeNewContext(getPersonCommonName(person, configuration), objectClasses, collectAttributeMap(person));
-                ableToSend = true;
-            } catch (Throwable t) {
-                t.printStackTrace();
+                try {
+                    client.writeNewContext(getPersonCommonName(person, configuration), objectClasses, collectAttributeMap(person));
+                    ableToSend = true;
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
             }
+        } finally {
+            client.logout();
         }
         return ableToSend;
-    }
-
-    public static String readULUserID(Person person) {
-        return readULUserID(person, getDefaultConfiguration());
-    }
-
-    public static String readULUserID(Person person, LdapServerIntegrationConfiguration configuration) {
-        String result = null;
-        LdapClient client =
-                new LdapClient(configuration.getUsername(), configuration.getPassword(), configuration.getUrl(),
-                        configuration.getBaseDomain());
-        boolean login = client.login();
-        if (login) {
-
-            QueryReply query =
-                    client.query(
-                            "(& (objectClass=ULAuxUser) (" + getPersonCommonName(person, configuration).split(",")[0] + "))",
-                            new String[] { UL_USER_ID });
-
-            if (query.getNumberOfResults() == 1) {
-                QueryReplyElement queryReplyElement = query.getResults().get(0);
-                result = queryReplyElement.getSimpleAttribute(UL_USER_ID);
-            }
-        }
-
-        return result;
     }
 
     public static boolean updatePersonInLdap(Person person) {
@@ -197,21 +328,23 @@ public class LdapIntegration {
 
     public static boolean updatePersonInLdap(Person person, LdapServerIntegrationConfiguration configuration) {
         boolean ableToSend = false;
-        LdapClient client =
-                new LdapClient(configuration.getUsername(), configuration.getPassword(), configuration.getUrl(),
-                        configuration.getBaseDomain());
+        LdapClient client = configuration.getClient();
         boolean login = client.login();
-        if (login) {
+        try {
+            if (login) {
 
-            List<String> objectClasses = Arrays.asList(OBJECT_CLASSES_TO_ADD);
+                List<String> objectClasses = Arrays.asList(OBJECT_CLASSES_TO_ADD);
 
-            try {
-                client.replaceInExistingContext(getPersonCommonName(person, configuration), objectClasses,
-                        collectAttributeMap(person));
-                ableToSend = true;
-            } catch (Throwable t) {
-                t.printStackTrace();
+                try {
+                    client.replaceInExistingContext(getPersonCommonName(person, configuration), objectClasses,
+                            collectAttributeMap(person));
+                    ableToSend = true;
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
             }
+        } finally {
+            client.logout();
         }
         return ableToSend;
     }
