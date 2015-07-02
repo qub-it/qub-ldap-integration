@@ -47,7 +47,7 @@ import com.qubit.solution.fenixedu.integration.ldap.ui.LdapBaseController;
 import com.qubit.solution.fenixedu.integration.ldap.ui.LdapController;
 import com.qubit.terra.ldapclient.LdapClient;
 
-@SpringFunctionality(app = LdapController.class, title = "label.title.ldapConfiguration", accessGroup = "logged")
+@SpringFunctionality(app = LdapController.class, title = "label.title.ldapConfiguration", accessGroup = "#managers")
 // CHANGE_ME accessGroup = "group1 | group2 | groupXPTO"
 @RequestMapping("/ldap/ldapconfiguration/ldapserverintegrationconfiguration")
 public class LdapServerIntegrationConfigurationController extends LdapBaseController {
