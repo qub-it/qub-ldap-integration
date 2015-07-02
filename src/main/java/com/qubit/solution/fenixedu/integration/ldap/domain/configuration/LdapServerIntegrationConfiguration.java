@@ -54,7 +54,11 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
     }
 
     public void delete() {
+        if (this == Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration()) {
+            Bennu.getInstance().setDefaultLdapServerIntegrationConfiguration(null);
+        }
         setRootDomainObject(null);
+
         super.deleteDomainObject();
     }
 
