@@ -26,7 +26,9 @@
  */
 package com.qubit.solution.fenixedu.integration.ldap.service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.fenixedu.academic.domain.Country;
@@ -162,6 +164,67 @@ public class LdapIntegration {
         return createTemporaryUser(username, password, getDefaultConfiguration());
     }
 
+    // Map with each property and a string array
+    // position 0 local, position 1 ldap info 
+    //
+    public static Map<String, String[]> retrieveSyncInformation(Person person) {
+        return retrieveSyncInformation(person, getDefaultConfiguration());
+    }
+
+    public static Map<String, String[]> retrieveSyncInformation(Person person,
+            LdapServerIntegrationConfiguration defaultConfiguration) {
+        AttributesMap collectAttributeMap = collectAttributeMap(person);
+        Map<String, String[]> map = new LinkedHashMap<String, String[]>();
+
+        LdapClient client = defaultConfiguration.getClient();
+        String[] fields =
+                new String[] { FULL_NAME_ATTRIBUTE, GIVEN_NAME_ATTRIBUTE, LAST_NAME_ATTRIBUTE, UL_BI_ATTRIBUTE, CO_ATTRIBUTE,
+                        UL_SEX_ATTRIBUTE, UL_BIRTH_DATE_ATTRIBUTE, UL_POSTAL_ADDR_ATTRIBUTE, UL_POSTAL_CODE_ATTRIBUTE,
+                        UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + getSchoolCode(), UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE,
+                        UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_FENIXUSER };
+
+        for (String field : fields) {
+            String[] values = new String[2];
+            List<String> list = collectAttributeMap.get(field);
+            StringBuilder builder = concatenateValues(list);
+            values[0] = builder.toString();
+            map.put(field, values);
+        }
+
+        if (client.login()) {
+            try {
+                QueryReply query = client.query("cn=" + person.getUsername(), fields);
+                if (query.getNumberOfResults() == 1) {
+                    QueryReplyElement queryReplyElement = query.getResults().get(0);
+                    for (String field : fields) {
+                        String[] values = map.get(field);
+                        List<String> list = queryReplyElement.getListAttribute(field);
+                        StringBuilder builder = concatenateValues(list);
+                        values[1] = builder.toString();
+                    }
+                }
+
+            } finally {
+                client.logout();
+            }
+        }
+
+        return map;
+    }
+
+    private static StringBuilder concatenateValues(List<String> list) {
+        StringBuilder builder = new StringBuilder();
+        if (list != null && !list.isEmpty()) {
+            for (String element : list) {
+                if (builder.length() > 0) {
+                    builder.append(" ; ");
+                }
+                builder.append(element);
+            }
+        }
+        return builder;
+    }
+
     public static boolean createTemporaryUser(String username, String password, LdapServerIntegrationConfiguration configuration) {
         AttributesMap attributesMap = new AttributesMap();
         attributesMap.add(UL_FENIXUSER, username);
@@ -205,11 +268,68 @@ public class LdapIntegration {
         return isAvailable;
     }
 
-    public static boolean readPersonInformationFromLdap(Person person) {
-        return readPersonInformationFromLdap(person, getDefaultConfiguration());
+    public static boolean createPersonInLdap(Person person) {
+        return createPersonInLdap(person, getDefaultConfiguration());
     }
 
-    public static boolean readPersonInformationFromLdap(Person person, LdapServerIntegrationConfiguration configuration) {
+    public static boolean createPersonInLdap(Person person, LdapServerIntegrationConfiguration configuration) {
+        boolean ableToSend = false;
+        LdapClient client = configuration.getClient();
+        boolean login = client.login();
+        try {
+            if (login) {
+
+                List<String> objectClasses = Arrays.asList(OBJECT_CLASSES_TO_ADD);
+
+                try {
+                    client.writeNewContext(getPersonCommonName(person, configuration), objectClasses, collectAttributeMap(person));
+                    ableToSend = true;
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
+            }
+        } finally {
+            client.logout();
+        }
+        return ableToSend;
+    }
+
+    public static boolean updatePersonInLdap(Person person) {
+        return updatePersonInLdap(person, getDefaultConfiguration());
+    }
+
+    public static boolean updatePersonInLdap(Person person, LdapServerIntegrationConfiguration configuration) {
+        if (!isPersonAvailableInLdap(person, configuration)) {
+            return createPersonInLdap(person, configuration);
+        } else {
+            boolean ableToSend = false;
+            LdapClient client = configuration.getClient();
+            boolean login = client.login();
+            try {
+                if (login) {
+
+                    List<String> objectClasses = Arrays.asList(OBJECT_CLASSES_TO_ADD);
+
+                    try {
+                        client.replaceInExistingContext(getPersonCommonName(person, configuration), objectClasses,
+                                collectAttributeMap(person));
+                        ableToSend = true;
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                    }
+                }
+            } finally {
+                client.logout();
+            }
+            return ableToSend;
+        }
+    }
+
+    public static boolean updatePersonUsingLdap(Person person) {
+        return updatePersonUsingLdap(person, getDefaultConfiguration());
+    }
+
+    public static boolean updatePersonUsingLdap(Person person, LdapServerIntegrationConfiguration configuration) {
 
         String schoolCode = getSchoolCode();
         LdapClient client = configuration.getClient();
@@ -296,56 +416,4 @@ public class LdapIntegration {
 
     }
 
-    public static boolean createPersonInLdap(Person person) {
-        return createPersonInLdap(person, getDefaultConfiguration());
-    }
-
-    public static boolean createPersonInLdap(Person person, LdapServerIntegrationConfiguration configuration) {
-        boolean ableToSend = false;
-        LdapClient client = configuration.getClient();
-        boolean login = client.login();
-        try {
-            if (login) {
-
-                List<String> objectClasses = Arrays.asList(OBJECT_CLASSES_TO_ADD);
-
-                try {
-                    client.writeNewContext(getPersonCommonName(person, configuration), objectClasses, collectAttributeMap(person));
-                    ableToSend = true;
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                }
-            }
-        } finally {
-            client.logout();
-        }
-        return ableToSend;
-    }
-
-    public static boolean updatePersonInLdap(Person person) {
-        return updatePersonInLdap(person, getDefaultConfiguration());
-    }
-
-    public static boolean updatePersonInLdap(Person person, LdapServerIntegrationConfiguration configuration) {
-        boolean ableToSend = false;
-        LdapClient client = configuration.getClient();
-        boolean login = client.login();
-        try {
-            if (login) {
-
-                List<String> objectClasses = Arrays.asList(OBJECT_CLASSES_TO_ADD);
-
-                try {
-                    client.replaceInExistingContext(getPersonCommonName(person, configuration), objectClasses,
-                            collectAttributeMap(person));
-                    ableToSend = true;
-                } catch (Throwable t) {
-                    t.printStackTrace();
-                }
-            }
-        } finally {
-            client.logout();
-        }
-        return ableToSend;
-    }
 }
