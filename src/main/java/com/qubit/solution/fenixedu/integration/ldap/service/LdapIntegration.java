@@ -206,7 +206,7 @@ public class LdapIntegration {
     }
 
     public static boolean readPersonInformationFromLdap(Person person) {
-        return syncPerson(person, getDefaultConfiguration());
+        return readPersonInformationFromLdap(person, getDefaultConfiguration());
     }
 
     public static boolean readPersonInformationFromLdap(Person person, LdapServerIntegrationConfiguration configuration) {
