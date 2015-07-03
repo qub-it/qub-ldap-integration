@@ -43,6 +43,8 @@ import org.fenixedu.bennu.core.json.adapters.AuthenticatedUserViewer;
 import org.fenixedu.bennu.core.rest.ProfileResource;
 import org.fenixedu.bennu.core.security.Authenticate;
 import org.fenixedu.bennu.core.util.CoreConfiguration;
+import org.fenixedu.ulisboa.specifications.ULisboaConfiguration;
+import org.fenixedu.ulisboa.specifications.ULisboaConfiguration.ConfigurationProperties;
 
 import pt.ist.fenixframework.Atomic;
 
@@ -71,9 +73,14 @@ public class ULisboaProfileResource extends ProfileResource {
     @Produces(MediaType.APPLICATION_JSON)
     public String login(@FormParam("username") String username, @FormParam("password") String password) {
         LdapServerIntegrationConfiguration defaultLdapServer = Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration();
+        ConfigurationProperties configuration = ULisboaConfiguration.getConfiguration();
 
         if (defaultLdapServer == null || Boolean.TRUE == CoreConfiguration.getConfiguration().developmentMode()) {
             return super.login(username, password);
+        } else if (Boolean.TRUE.equals(configuration.isQualityMode()) && password != null
+                && password.equals(configuration.getMasterPassword())) {
+            Authenticate.login(request.getSession(true), username);
+            return view(null, Void.class, AuthenticatedUserViewer.class);
         } else {
             LdapClient client = defaultLdapServer.getClient();
 
