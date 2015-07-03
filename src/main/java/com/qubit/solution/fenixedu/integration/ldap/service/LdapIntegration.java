@@ -26,6 +26,7 @@
  */
 package com.qubit.solution.fenixedu.integration.ldap.service;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,8 @@ import org.fenixedu.academic.domain.contacts.PartyContact;
 import org.fenixedu.academic.domain.contacts.PartyContactType;
 import org.fenixedu.academic.domain.contacts.PhysicalAddress;
 import org.fenixedu.academic.domain.person.Gender;
+import org.fenixedu.academic.domain.student.Registration;
+import org.fenixedu.academic.domain.student.Student;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -82,6 +85,9 @@ public class LdapIntegration {
 
     private static final String USER_PASSWORD = "userPassword";
 
+    private static final String UL_STUDENT_CODE = "ULStudentCode";
+    private static final String UL_COURSES = "ULCourses";
+
     private static String[] OBJECT_CLASSES_TO_ADD = { "person", "ULAuxUser", "ULFenixUser" };
     private static String[] OBJECT_CLASSES_TO_ADD_TEMP_USER = { "person", "ULFenixUser" };
 
@@ -103,7 +109,7 @@ public class LdapIntegration {
 
         AttributesMap attributesMap = new AttributesMap();
 
-        boolean isStudent = person.getStudent() != null && !person.getStudent().getActiveRegistrations().isEmpty();
+        boolean isStudent = isStudent(person);
         boolean isTeacher = person.getTeacher() != null && person.getTeacher().isActiveContractedTeacher();
         boolean isEmployee = false; // NOT YET IMPLEMENTED;
 
@@ -149,6 +155,11 @@ public class LdapIntegration {
         attributesMap.add(UL_FENIXUSER, person.getUsername());
         attributesMap.add(UL_FENIXUSER_ALIGNED, "FALSE");
         return attributesMap;
+    }
+
+    private static boolean isStudent(Person person) {
+        boolean isStudent = person.getStudent() != null && !person.getStudent().getActiveRegistrations().isEmpty();
+        return isStudent;
     }
 
     public static LdapServerIntegrationConfiguration getDefaultConfiguration() {
@@ -266,6 +277,48 @@ public class LdapIntegration {
         }
 
         return isAvailable;
+    }
+
+    public static boolean updateStudentStatus(Student student) {
+        return updateStudentStatus(student, getDefaultConfiguration());
+    }
+
+    public static boolean updateStudentStatus(Student student, LdapServerIntegrationConfiguration configuration) {
+        Person person = student.getPerson();
+
+        boolean ableToUpdateStudent = false;
+        if (!isPersonAvailableInLdap(person)) {
+            createPersonInLdap(person);
+        }
+
+        LdapClient client = configuration.getClient();
+        if (client.login()) {
+            try {
+                AttributesMap attributesMap = new AttributesMap();
+                List<String> objectClasses = new ArrayList<String>();
+
+                if (isStudent(person)) {
+                    attributesMap.add(UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), "TRUE");
+                    attributesMap.add(UL_STUDENT_CODE + getSchoolCode(), String.valueOf(student.getNumber()));
+                    List<String> courses = new ArrayList<String>();
+                    for (Registration registration : student.getActiveRegistrations()) {
+                        courses.add(registration.getDegreeName());
+                    }
+                    attributesMap.add(UL_COURSES + getSchoolCode(), courses.toArray(new String[] {}));
+                    objectClasses.add("ULAuxFac" + getSchoolCode());
+                } else {
+                    attributesMap.add(UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), "FALSE");
+                }
+
+                client.addToExistingContext(getPersonCommonName(person, configuration), objectClasses, attributesMap);
+                ableToUpdateStudent = true;
+            } finally {
+                client.logout();
+            }
+        }
+
+        return ableToUpdateStudent;
+
     }
 
     public static boolean createPersonInLdap(Person person) {
