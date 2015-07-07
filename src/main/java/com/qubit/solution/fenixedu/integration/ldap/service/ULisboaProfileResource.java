@@ -75,12 +75,12 @@ public class ULisboaProfileResource extends ProfileResource {
         LdapServerIntegrationConfiguration defaultLdapServer = Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration();
         ConfigurationProperties configuration = ULisboaConfiguration.getConfiguration();
 
-        if (defaultLdapServer == null || Boolean.TRUE == CoreConfiguration.getConfiguration().developmentMode()) {
-            return super.login(username, password);
-        } else if (Boolean.TRUE.equals(configuration.isQualityMode()) && password != null
+        if (Boolean.TRUE.equals(configuration.isQualityMode()) && password != null
                 && password.equals(configuration.getMasterPassword())) {
             Authenticate.login(request.getSession(true), username);
             return view(null, Void.class, AuthenticatedUserViewer.class);
+        } else if (defaultLdapServer == null || Boolean.TRUE == CoreConfiguration.getConfiguration().developmentMode()) {
+            return super.login(username, password);
         } else {
             LdapClient client = defaultLdapServer.getClient();
 
