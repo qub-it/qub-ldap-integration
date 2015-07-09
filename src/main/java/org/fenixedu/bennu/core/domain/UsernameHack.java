@@ -40,4 +40,8 @@ public class UsernameHack {
             findByUsername.setUsername(newUsername);
         }
     }
+
+    public static String getUserSalt(User user) {
+        return user.getSalt();
+    }
 }
