@@ -37,6 +37,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 import org.fenixedu.bennu.core.domain.Bennu;
+import org.fenixedu.bennu.core.domain.User;
 import org.fenixedu.bennu.core.domain.UsernameHack;
 import org.fenixedu.bennu.core.domain.exceptions.AuthorizationException;
 import org.fenixedu.bennu.core.json.adapters.AuthenticatedUserViewer;
@@ -83,32 +84,35 @@ public class ULisboaProfileResource extends ProfileResource {
             return super.login(username, password);
         } else {
             LdapClient client = defaultLdapServer.getClient();
+            boolean verifyCredentials = client.verifyCredentials(username, password);
 
-            if (client.login()) {
-                try {
-                    QueryReply query =
-                            client.query("(& (cn=" + username + ") (userPassword=" + password + "))", new String[] {
-                                    FENIX_USER_ATTRIBUTE, FENIX_USER_ALIGNED_ATTRIBUTE });
+            if (verifyCredentials) {
+                User user = User.findByUsername(username);
+                if (user == null) {
+                    // We have been able to login into LDAP but there's no matching
+                    // user in Fenix yet, this happens when there was an user alignment
+                    // so it's time for us to login into ldap and check that.
+                    if (client.login()) {
+                        try {
+                            QueryReply query =
+                                    client.query("(cn=" + username + ")", new String[] { FENIX_USER_ATTRIBUTE,
+                                            FENIX_USER_ALIGNED_ATTRIBUTE });
 
-                    if (query.getNumberOfResults() == 1) {
-                        QueryReplyElement queryReplyElement = query.getResults().get(0);
-                        String fenixUsername = queryReplyElement.getSimpleAttribute(FENIX_USER_ATTRIBUTE);
-                        String fenixUserAligned = queryReplyElement.getSimpleAttribute(FENIX_USER_ALIGNED_ATTRIBUTE);
-                        boolean userAligned = Boolean.valueOf(fenixUserAligned);
-                        if (!userAligned) {
-                            usernameAlign(fenixUsername, username);
-                            AttributesMap attributesMap = new AttributesMap();
-                            attributesMap.add(FENIX_USER_ALIGNED_ATTRIBUTE, "TRUE");
-                            client.replaceInExistingContext("cn=" + username + "," + defaultLdapServer.getBaseDomain(),
-                                    Collections.EMPTY_LIST, attributesMap);
+                            if (query.getNumberOfResults() == 1) {
+                                QueryReplyElement queryReplyElement = query.getResults().get(0);
+                                String fenixUsername = queryReplyElement.getSimpleAttribute(FENIX_USER_ATTRIBUTE);
+                                if (!fenixUsername.equals(username)) {
+                                    usernameAlign(fenixUsername, username);
+                                }
+
+                            }
+                        } finally {
+                            client.logout();
                         }
-
-                        Authenticate.login(request.getSession(true), username);
-                        return view(null, Void.class, AuthenticatedUserViewer.class);
                     }
-                } finally {
-                    client.logout();
                 }
+                Authenticate.login(request.getSession(true), username);
+                return view(null, Void.class, AuthenticatedUserViewer.class);
             }
         }
 
