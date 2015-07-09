@@ -26,12 +26,18 @@
  */
 package com.qubit.solution.fenixedu.integration.ldap.service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.math.RandomUtils;
 import org.fenixedu.academic.domain.Country;
 import org.fenixedu.academic.domain.Person;
 import org.fenixedu.academic.domain.contacts.EmailAddress;
@@ -42,6 +48,8 @@ import org.fenixedu.academic.domain.person.Gender;
 import org.fenixedu.academic.domain.student.Registration;
 import org.fenixedu.academic.domain.student.Student;
 import org.fenixedu.bennu.core.domain.Bennu;
+import org.fenixedu.bennu.core.domain.User;
+import org.fenixedu.bennu.core.domain.UsernameHack;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonthDay;
@@ -49,6 +57,7 @@ import org.springframework.format.datetime.joda.DateTimeFormatterFactory;
 
 import pt.ist.fenixframework.Atomic;
 
+import com.google.common.io.BaseEncoding;
 import com.qubit.solution.fenixedu.integration.ldap.domain.configuration.LdapServerIntegrationConfiguration;
 import com.qubit.terra.ldapclient.AttributesMap;
 import com.qubit.terra.ldapclient.LdapClient;
@@ -81,7 +90,6 @@ public class LdapIntegration {
 
     // From ULFenixUser class
     private static final String UL_FENIXUSER = "ULFenixUser";
-    private static final String UL_FENIXUSER_ALIGNED = "ULFenixUserAligned";
 
     private static final String USER_PASSWORD = "userPassword";
 
@@ -102,6 +110,26 @@ public class LdapIntegration {
 
     private static String getPersonCommonName(Person person, LdapServerIntegrationConfiguration configuration) {
         return getObjectCommonName(person.getUsername(), configuration);
+    }
+
+    public static String generateLdapPassword(String password, String salt) {
+        byte[] hashedString = null;
+        try {
+            hashedString = java.security.MessageDigest.getInstance("SHA-1").digest((password + salt).getBytes());
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Problems accessing SHA-1 algorithm", e);
+        }
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            outputStream.write(hashedString);
+            outputStream.write(salt.getBytes());
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        byte finalArray[] = outputStream.toByteArray();
+        return "{SSHA}" + BaseEncoding.base64().encode(finalArray).trim();
     }
 
     private static AttributesMap collectAttributeMap(Person person) {
@@ -153,7 +181,6 @@ public class LdapIntegration {
         }
 
         attributesMap.add(UL_FENIXUSER, person.getUsername());
-        attributesMap.add(UL_FENIXUSER_ALIGNED, "FALSE");
         return attributesMap;
     }
 
@@ -171,8 +198,37 @@ public class LdapIntegration {
         return defaultLdapServerIntegrationConfiguration;
     }
 
-    public static boolean createTemporaryUser(String username, String password) {
-        return createTemporaryUser(username, password, getDefaultConfiguration());
+    public static boolean deleteUser(User user) {
+        return deleteUser(user.getUsername());
+    }
+
+    public static boolean deleteUser(String username) {
+        return deleteUser(username, getDefaultConfiguration());
+    }
+
+    public static boolean deleteUser(String username, String password, LdapServerIntegrationConfiguration configuration) {
+        AttributesMap attributesMap = new AttributesMap();
+        attributesMap.add(UL_FENIXUSER, username);
+        attributesMap.add(USER_PASSWORD, password);
+
+        boolean ableToSend = false;
+        LdapClient client = configuration.getClient();
+        try {
+            if (client.login()) {
+                client.writeNewContext(getObjectCommonName(username, configuration),
+                        Arrays.asList(OBJECT_CLASSES_TO_ADD_TEMP_USER), attributesMap);
+                ableToSend = true;
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+        return ableToSend;
+    }
+
+    public static boolean createUser(String username, String password, String salt) {
+//        String salt = RandomStringUtils.randomAscii(16);
+        String generateLdapPassword = generateLdapPassword(password, salt);
+        return createUser(username, generateLdapPassword, getDefaultConfiguration());
     }
 
     // Map with each property and a string array
@@ -236,17 +292,31 @@ public class LdapIntegration {
         return builder;
     }
 
-    public static boolean createTemporaryUser(String username, String password, LdapServerIntegrationConfiguration configuration) {
+    public static boolean createUser(String username, String password, LdapServerIntegrationConfiguration configuration) {
         AttributesMap attributesMap = new AttributesMap();
+        attributesMap.add(LAST_NAME_ATTRIBUTE, username);
         attributesMap.add(UL_FENIXUSER, username);
         attributesMap.add(USER_PASSWORD, password);
-        attributesMap.add(UL_FENIXUSER_ALIGNED, "TRUE");
 
         boolean ableToSend = false;
         LdapClient client = configuration.getClient();
         try {
-            client.writeNewContext(getObjectCommonName(username, configuration), Arrays.asList(OBJECT_CLASSES_TO_ADD_TEMP_USER),
-                    attributesMap);
+            if (client.login()) {
+                client.writeNewContext(getObjectCommonName(username, configuration),
+                        Arrays.asList(OBJECT_CLASSES_TO_ADD_TEMP_USER), attributesMap);
+                ableToSend = true;
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+        return ableToSend;
+    }
+
+    public static boolean deleteUser(String username, LdapServerIntegrationConfiguration configuration) {
+        boolean ableToSend = false;
+        LdapClient client = configuration.getClient();
+        try {
+            client.deleteContext(getObjectCommonName(username, configuration));
             ableToSend = true;
         } catch (Throwable t) {
             t.printStackTrace();
@@ -254,17 +324,21 @@ public class LdapIntegration {
         return ableToSend;
     }
 
-    public static boolean isPersonAvailableInLdap(Person person) {
-        return isPersonAvailableInLdap(person, getDefaultConfiguration());
+    public static boolean isUserAvailableInLdap(User user) {
+        return isUserAvailableInLdap(user, getDefaultConfiguration());
     }
 
-    private static boolean isPersonAvailableInLdap(Person person, LdapServerIntegrationConfiguration defaultConfiguration) {
+    public static boolean isPersonAvailableInLdap(Person person) {
+        return isUserAvailableInLdap(person.getUser(), getDefaultConfiguration());
+    }
+
+    private static boolean isUserAvailableInLdap(User user, LdapServerIntegrationConfiguration defaultConfiguration) {
         LdapClient client = defaultConfiguration.getClient();
         boolean isAvailable = false;
         try {
             if (client.login()) {
                 try {
-                    QueryReply query = client.query("cn=" + person.getUsername(), new String[] { UL_FENIXUSER });
+                    QueryReply query = client.query("cn=" + user.getUsername(), new String[] { UL_FENIXUSER });
                     if (query.getNumberOfResults() == 1) {
                         isAvailable = true;
                     }
@@ -352,7 +426,7 @@ public class LdapIntegration {
     }
 
     public static boolean updatePersonInLdap(Person person, LdapServerIntegrationConfiguration configuration) {
-        if (!isPersonAvailableInLdap(person, configuration)) {
+        if (!isUserAvailableInLdap(person.getUser(), configuration)) {
             return createPersonInLdap(person, configuration);
         } else {
             boolean ableToSend = false;
