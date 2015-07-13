@@ -24,37 +24,27 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with FenixEdu fenixedu-ulisboa-ldapIntegration.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.qubit.solution.fenixedu.integration.ldap.servlet;
+package com.qubit.solution.fenixedu.integration.ldap.service;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.annotation.WebListener;
+import org.fenixedu.academic.domain.Person;
+import org.fenixedu.academic.domain.student.Student;
+import org.fenixedu.ulisboa.specifications.domain.student.access.importation.external.SyncPersonWithExternalServices;
 
-import org.fenixedu.bennu.core.domain.User;
-import org.fenixedu.ulisboa.specifications.domain.student.access.StudentAccessServices;
-
-import pt.ist.fenixframework.FenixFramework;
-import pt.ist.fenixframework.dml.DeletionListener;
-
-import com.qubit.solution.fenixedu.integration.ldap.service.LdapIntegration;
-import com.qubit.solution.fenixedu.integration.ldap.service.SyncPersonWithLdap;
-
-@WebListener
-public class LdapIntegrationInitializer implements ServletContextListener {
+public class SyncPersonWithLdap implements SyncPersonWithExternalServices {
 
     @Override
-    public void contextInitialized(ServletContextEvent event) {
-        FenixFramework.getDomainModel().registerDeletionListener(User.class, new DeletionListener<User>() {
-
-            @Override
-            public void deleting(User user) {
-                LdapIntegration.deleteUser(user);
-            }
-        });
-        StudentAccessServices.subscribeSyncPerson(new SyncPersonWithLdap());
+    public boolean syncPersonToExternal(Person person) {
+        return LdapIntegration.updatePersonInLdap(person);
     }
 
     @Override
-    public void contextDestroyed(ServletContextEvent event) {
+    public boolean syncPersonFromExternal(Person person) {
+        return LdapIntegration.updatePersonUsingLdap(person);
     }
+
+    @Override
+    public boolean syncStudentToExternal(Student student) {
+        return LdapIntegration.updateStudentStatus(student);
+    }
+
 }
