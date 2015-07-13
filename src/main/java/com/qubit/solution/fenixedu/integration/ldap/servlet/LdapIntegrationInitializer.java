@@ -37,7 +37,7 @@ import pt.ist.fenixframework.FenixFramework;
 import pt.ist.fenixframework.dml.DeletionListener;
 
 import com.qubit.solution.fenixedu.integration.ldap.service.LdapIntegration;
-import com.qubit.solution.fenixedu.integration.ldap.service.SyncPersonWithLdap;
+import com.qubit.solution.fenixedu.integration.ldap.service.integration.SyncPersonWithLdap;
 
 @WebListener
 public class LdapIntegrationInitializer implements ServletContextListener {

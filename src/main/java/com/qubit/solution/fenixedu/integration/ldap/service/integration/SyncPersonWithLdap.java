@@ -24,11 +24,13 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with FenixEdu fenixedu-ulisboa-ldapIntegration.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.qubit.solution.fenixedu.integration.ldap.service;
+package com.qubit.solution.fenixedu.integration.ldap.service.integration;
 
 import org.fenixedu.academic.domain.Person;
 import org.fenixedu.academic.domain.student.Student;
 import org.fenixedu.ulisboa.specifications.domain.student.access.importation.external.SyncPersonWithExternalServices;
+
+import com.qubit.solution.fenixedu.integration.ldap.service.LdapIntegration;
 
 public class SyncPersonWithLdap implements SyncPersonWithExternalServices {
 
