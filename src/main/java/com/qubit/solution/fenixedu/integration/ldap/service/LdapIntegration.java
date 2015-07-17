@@ -29,15 +29,12 @@ package com.qubit.solution.fenixedu.integration.ldap.service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.math.RandomUtils;
 import org.fenixedu.academic.domain.Country;
 import org.fenixedu.academic.domain.Person;
 import org.fenixedu.academic.domain.contacts.EmailAddress;
@@ -49,7 +46,6 @@ import org.fenixedu.academic.domain.student.Registration;
 import org.fenixedu.academic.domain.student.Student;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.bennu.core.domain.User;
-import org.fenixedu.bennu.core.domain.UsernameHack;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonthDay;
@@ -132,6 +128,24 @@ public class LdapIntegration {
         return "{SSHA}" + BaseEncoding.base64().encode(finalArray).trim();
     }
 
+    private static AttributesMap collectAttributeMap(Student student) {
+        AttributesMap attributesMap = new AttributesMap();
+        attributesMap.add(UL_STUDENT_CODE + getSchoolCode(), String.valueOf(student.getNumber()));
+        if (isStudent(student.getPerson())) {
+            attributesMap.add(UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), "TRUE");
+            List<String> courses = new ArrayList<String>();
+            for (Registration registration : student.getActiveRegistrations()) {
+                courses.add(registration.getDegreeCurricularPlanName() + " " + registration.getDegreeName());
+            }
+            attributesMap.add(UL_COURSES + getSchoolCode(), courses.toArray(new String[] {}));
+        } else {
+            attributesMap.add(UL_COURSES + getSchoolCode(), new String[] { "noCourses" });
+            attributesMap.add(UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), "FALSE");
+        }
+
+        return attributesMap;
+    }
+
     private static AttributesMap collectAttributeMap(Person person) {
         String schooldCode = getSchoolCode();
 
@@ -181,6 +195,8 @@ public class LdapIntegration {
         }
 
         attributesMap.add(UL_FENIXUSER, person.getUsername());
+
+        attributesMap.add(UL_COURSES + getSchoolCode(), new String[] {});
         return attributesMap;
     }
 
@@ -234,25 +250,16 @@ public class LdapIntegration {
     // Map with each property and a string array
     // position 0 local, position 1 ldap info 
     //
-    public static Map<String, String[]> retrieveSyncInformation(Person person) {
-        return retrieveSyncInformation(person, getDefaultConfiguration());
-    }
 
-    public static Map<String, String[]> retrieveSyncInformation(Person person,
+    private static Map<String, String[]> retrieveSyncInfo(AttributesMap collectedMap, String[] fields, String username,
             LdapServerIntegrationConfiguration defaultConfiguration) {
-        AttributesMap collectAttributeMap = collectAttributeMap(person);
         Map<String, String[]> map = new LinkedHashMap<String, String[]>();
 
         LdapClient client = defaultConfiguration.getClient();
-        String[] fields =
-                new String[] { FULL_NAME_ATTRIBUTE, GIVEN_NAME_ATTRIBUTE, LAST_NAME_ATTRIBUTE, UL_BI_ATTRIBUTE, CO_ATTRIBUTE,
-                        UL_SEX_ATTRIBUTE, UL_BIRTH_DATE_ATTRIBUTE, UL_POSTAL_ADDR_ATTRIBUTE, UL_POSTAL_CODE_ATTRIBUTE,
-                        UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + getSchoolCode(), UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE,
-                        UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_FENIXUSER };
 
         for (String field : fields) {
             String[] values = new String[2];
-            List<String> list = collectAttributeMap.get(field);
+            List<String> list = collectedMap.get(field);
             StringBuilder builder = concatenateValues(list);
             values[0] = builder.toString();
             map.put(field, values);
@@ -260,7 +267,7 @@ public class LdapIntegration {
 
         if (client.login()) {
             try {
-                QueryReply query = client.query("cn=" + person.getUsername(), fields);
+                QueryReply query = client.query("cn=" + username, fields);
                 if (query.getNumberOfResults() == 1) {
                     QueryReplyElement queryReplyElement = query.getResults().get(0);
                     for (String field : fields) {
@@ -277,6 +284,33 @@ public class LdapIntegration {
         }
 
         return map;
+    }
+
+    public static Map<String, String[]> retrieveSyncInformation(Student student) {
+        return retrieveSyncInformation(student, getDefaultConfiguration());
+    }
+
+    public static Map<String, String[]> retrieveSyncInformation(Student student,
+            LdapServerIntegrationConfiguration defaultConfiguration) {
+        return retrieveSyncInfo(collectAttributeMap(student), new String[] { UL_STUDENT_CODE + getSchoolCode(),
+                UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_COURSES + getSchoolCode() }, student.getPerson().getUsername(),
+                defaultConfiguration);
+    }
+
+    public static Map<String, String[]> retrieveSyncInformation(Person person) {
+        return retrieveSyncInformation(person, getDefaultConfiguration());
+    }
+
+    public static Map<String, String[]> retrieveSyncInformation(Person person,
+            LdapServerIntegrationConfiguration defaultConfiguration) {
+        String[] fields =
+                new String[] { FULL_NAME_ATTRIBUTE, GIVEN_NAME_ATTRIBUTE, LAST_NAME_ATTRIBUTE, UL_BI_ATTRIBUTE, CO_ATTRIBUTE,
+                        UL_SEX_ATTRIBUTE, UL_BIRTH_DATE_ATTRIBUTE, UL_POSTAL_ADDR_ATTRIBUTE, UL_POSTAL_CODE_ATTRIBUTE,
+                        UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + getSchoolCode(),
+                        UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_TEACHER_ACTIVE_ATTRIBUTE + getSchoolCode(),
+                        UL_TEACHER_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_FENIXUSER };
+
+        return retrieveSyncInfo(collectAttributeMap(person), fields, person.getUsername(), defaultConfiguration);
     }
 
     private static StringBuilder concatenateValues(List<String> list) {
@@ -302,8 +336,9 @@ public class LdapIntegration {
         LdapClient client = configuration.getClient();
         try {
             if (client.login()) {
-                client.writeNewContext(getObjectCommonName(username, configuration),
-                        Arrays.asList(OBJECT_CLASSES_TO_ADD_TEMP_USER), attributesMap);
+                @SuppressWarnings("unchecked")
+                List<String> classesList = new ArrayList<String>(Arrays.asList(OBJECT_CLASSES_TO_ADD_TEMP_USER));
+                client.writeNewContext(getObjectCommonName(username, configuration), classesList, attributesMap);
                 ableToSend = true;
             }
         } catch (Throwable t) {
@@ -368,23 +403,11 @@ public class LdapIntegration {
         LdapClient client = configuration.getClient();
         if (client.login()) {
             try {
-                AttributesMap attributesMap = new AttributesMap();
+                AttributesMap attributesMap = collectAttributeMap(student);
                 List<String> objectClasses = new ArrayList<String>();
-
-                if (isStudent(person)) {
-                    attributesMap.add(UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), "TRUE");
-                    attributesMap.add(UL_STUDENT_CODE + getSchoolCode(), String.valueOf(student.getNumber()));
-                    List<String> courses = new ArrayList<String>();
-                    for (Registration registration : student.getActiveRegistrations()) {
-                        courses.add(registration.getDegreeName());
-                    }
-                    attributesMap.add(UL_COURSES + getSchoolCode(), courses.toArray(new String[] {}));
-                    objectClasses.add("ULAuxFac" + getSchoolCode());
-                } else {
-                    attributesMap.add(UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), "FALSE");
-                }
-
-                client.addToExistingContext(getPersonCommonName(person, configuration), objectClasses, attributesMap);
+                objectClasses.addAll(Arrays.asList(OBJECT_CLASSES_TO_ADD));
+                objectClasses.add("ULAuxFac" + getSchoolCode());
+                client.replaceInExistingContext(getPersonCommonName(person, configuration), objectClasses, attributesMap);
                 ableToUpdateStudent = true;
             } finally {
                 client.logout();
