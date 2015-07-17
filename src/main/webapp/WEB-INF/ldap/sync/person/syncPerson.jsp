@@ -55,6 +55,12 @@ ${portal.toolkit()}
 		class="glyphicon glyphicon-cog" aria-hidden="true"></span>&nbsp;<a
 		class="" href='javascript:receiveFromLdap();'><spring:message
 			code="label.event.receiveFromLdap" /></a>
+	<c:if test="${not empty studentSyncInformation}">
+		| &nbsp; &nbsp; <span
+		class="glyphicon glyphicon-cog" aria-hidden="true"></span>&nbsp;<a
+		class="" href='javascript:sendStudenToLdap();'><spring:message
+			code="label.event.sendStudenToLdap" /></a>
+	</c:if>
 </div>
 
 <script type="text/javascript">
@@ -65,7 +71,34 @@ ${portal.toolkit()}
 	function receiveFromLdap() {
 		$('#receiveFromLdap').modal('toggle')
 	}
+	
+	<c:if test="${not empty studentSyncInformation}">
+	function sendStudenToLdap() {
+		$('#sendStudenToLdap').modal('toggle')
+	}
+	</c:if>
 </script>
+
+<c:if test="${not empty studentSyncInformation}">
+	<div class="modal fade" id="sendStudenToLdap">
+	  <div class="modal-dialog">
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	        <h4 class="modal-title"><spring:message code="label.confirmation"/></h4>
+	      </div>
+	      <div class="modal-body">
+	        <p><spring:message code = "label.confirmation.sendToLdap"/></p>
+	      </div>
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-default" data-dismiss="modal"><spring:message code = "label.close"/></button>
+	        <a id="deleteLink" class="btn btn-danger" href='javascript:$("#sendStudentToLdapForm").submit()'> <spring:message code = "label.send"/></a>
+	      </div>
+	    </div><!-- /.modal-content -->
+	  </div><!-- /.modal-dialog -->
+	</div><!-- /.modal -->
+</c:if>
+
 
 <div class="modal fade" id="sendToLdap">
   <div class="modal-dialog">
@@ -112,6 +145,12 @@ ${portal.toolkit()}
 	action="${pageContext.request.contextPath}/ldap/sync/person/receivefromldap/${person.externalId}"
 	method="POST"></form>
 
+<c:if test="${not empty studentSyncInformation}">
+<form id="sendStudentToLdapForm"
+	action="${pageContext.request.contextPath}/ldap/sync/person/sendstudenttoldap/${person.externalId}"
+	method="POST"></form>
+</c:if>
+
 
 <c:if test="${not empty infoMessages}">
 	<div class="alert alert-info" role="alert">
@@ -148,8 +187,6 @@ ${portal.toolkit()}
 		</h3>
 	</div>
 	<div class="panel-body">
-
-
 		<table class="table responsive table-bordered table-hover">
 			<tr>
 				<th><spring:message code="label.attributes" /></th>
@@ -165,7 +202,33 @@ ${portal.toolkit()}
 				</tr>
 			</c:forEach>
 		</table>
-
-
 	</div>
 </div>
+
+
+<c:if test="${not empty studentSyncInformation}">
+	<div class="panel panel-primary">
+		<div class="panel-heading">
+			<h3 class="panel-title">
+				<spring:message code="label.student.details" />
+			</h3>
+		</div>
+		<div class="panel-body">
+			<table class="table responsive table-bordered table-hover">
+				<tr>
+					<th><spring:message code="label.attributes" /></th>
+					<th><spring:message code="label.attributes.fenix" /></th>
+					<th><spring:message code="label.attributes.ldap" /></th>
+				</tr>
+				<c:forEach var="attribute" items="${studentSyncInformation}">
+	
+					<tr>
+						<th>${attribute.key}</th>
+						<td>${attribute.value[0]}</td>
+						<td>${attribute.value[1]}</td>
+					</tr>
+				</c:forEach>
+			</table>
+		</div>
+	</div>
+</c:if>
