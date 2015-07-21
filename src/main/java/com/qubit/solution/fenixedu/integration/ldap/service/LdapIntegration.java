@@ -96,7 +96,7 @@ public class LdapIntegration {
     private static String[] OBJECT_CLASSES_TO_ADD_TEMP_USER = { "person", "ULFenixUser" };
 
     private static String getSchoolCode() {
-        return "FMV"; // Bennu.getInstance().getInstitutionUnit().getAcronym();
+        return Bennu.getInstance().getInstitutionUnit().getAcronym();
     }
 
     private static String getObjectCommonName(String username, LdapServerIntegrationConfiguration configuration) {
