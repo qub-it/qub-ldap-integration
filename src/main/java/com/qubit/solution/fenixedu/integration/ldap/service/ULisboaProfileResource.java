@@ -84,7 +84,7 @@ public class ULisboaProfileResource extends ProfileResource {
             return super.login(username, password);
         } else {
             LdapClient client = defaultLdapServer.getClient();
-            boolean verifyCredentials = client.verifyCredentials(username, password);
+            boolean verifyCredentials = client.verifyCredentials(username.replace("@campus.ul.pt", ""), password);
 
             if (verifyCredentials) {
                 User user = User.findByUsername(username);
