@@ -77,6 +77,12 @@ ${portal.toolkit()}
 		class=""
 		href="${pageContext.request.contextPath}/ldap/ldapconfiguration/ldapserverintegrationconfiguration/create"><spring:message
 			code="label.event.create" /></a> |&nbsp;&nbsp;
+			
+	<span class="glyphicon glyphicon-plus-sign" aria-hidden="true"></span>&nbsp;<a
+		class=""
+		href="javascript:disableDefaultLdapServer()"><spring:message
+			code="label.event.disableDefaultLdapServer" /></a> 
+			
 </div>
 
 <c:if test="${not empty infoMessages}">
@@ -107,7 +113,26 @@ ${portal.toolkit()}
 	</div>
 </c:if>
 
+<form id="submitForm" action="" method="POST">
+</form>
+
 <script type="text/javascript">
+
+	function testConnection(externalId) {
+		$("#submitForm").attr('action','${pageContext.request.contextPath}/ldap/ldapconfiguration/ldapserverintegrationconfiguration/search/testconnection/' + externalId);
+		$("#submitForm").submit();
+	}
+	
+	function setDefaultLdapServer(externalId) {
+		$("#submitForm").attr('action','${pageContext.request.contextPath}/ldap/ldapconfiguration/ldapserverintegrationconfiguration/search/setdefault/' + externalId);
+		$("#submitForm").submit();
+	}
+	
+	function disableDefaultLdapServer() {
+		$("#submitForm").attr('action','${pageContext.request.contextPath}/ldap/ldapconfiguration/ldapserverintegrationconfiguration/search/disableDefault');
+		$("#submitForm").submit();
+	}
+	
 	function addModal(confirmationMessage, formID) {
 		$("body").append('<div class="modal fade" id="confirmModal-' + formID + '"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title"><spring:message code="label.confirmation" /></h4></div><div class="modal-body"><p>' + confirmationMessage + '</p></div><div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal"><spring:message code="label.close" /></button><a class="btn btn-danger" onClick="javascript:$("#' + formID + '").submit();"><spring:message code="label.delete" /></a></div></div></div></div>');
 	}
@@ -219,11 +244,11 @@ ${portal.toolkit()}
 "serverid" : "<c:out value='${searchResult.serverID}'/>",
 "basedomain" : "<c:out value='${searchResult.baseDomain}'/>",
 "url" : "<c:out value='${searchResult.url}'/>",
-"defaultConfiguration" : "<c:out value='${searchResult.defaultConfiguration}'/>",
+"defaultConfiguration" : "<spring:message code='label.${searchResult.defaultConfiguration}'/>",
 "actions" :
 " <a  class=\"btn btn-default btn-xs\" href=\"${pageContext.request.contextPath}/ldap/ldapconfiguration/ldapserverintegrationconfiguration/search/view/${searchResult.externalId}\"><spring:message code='label.view'/></a>" +
-" <a  class=\"btn btn-default btn-xs\" href=\"${pageContext.request.contextPath}/ldap/ldapconfiguration/ldapserverintegrationconfiguration/search/setdefault/${searchResult.externalId}\"><spring:message code='label.setDefault'/></a>" +
-" <a  class=\"btn btn-default btn-xs\" href=\"${pageContext.request.contextPath}/ldap/ldapconfiguration/ldapserverintegrationconfiguration/search/testconnection/${searchResult.externalId}\"><spring:message code='label.testConnection'/></a>" +
+" <a  class=\"btn btn-default btn-xs\" href=\"javascript:setDefaultLdapServer(${searchResult.externalId})\"><spring:message code='label.setDefault'/></a>" +
+" <a  class=\"btn btn-default btn-xs\" href=\"javascript:testConnection(${searchResult.externalId})\"><spring:message code='label.testConnection'/></a>" +
 "" },
             </c:forEach>
     ];

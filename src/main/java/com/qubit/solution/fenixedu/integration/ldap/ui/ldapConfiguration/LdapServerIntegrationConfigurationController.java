@@ -48,7 +48,6 @@ import com.qubit.solution.fenixedu.integration.ldap.ui.LdapController;
 import com.qubit.terra.ldapclient.LdapClient;
 
 @SpringFunctionality(app = LdapController.class, title = "label.title.ldapConfiguration", accessGroup = "#managers")
-// CHANGE_ME accessGroup = "group1 | group2 | groupXPTO"
 @RequestMapping("/ldap/ldapconfiguration/ldapserverintegrationconfiguration")
 public class LdapServerIntegrationConfigurationController extends LdapBaseController {
 
@@ -106,6 +105,17 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
                                 .getBaseDomain().toLowerCase().contains(baseDomain.toLowerCase()))).collect(Collectors.toList());
     }
 
+    @RequestMapping(value = "/search/disableDefault", method = RequestMethod.POST)
+    public String processSearchToDisableDefault(Model model) {
+        resetDefault();
+        return "redirect:/ldap/ldapconfiguration/ldapserverintegrationconfiguration/";
+    }
+
+    @Atomic
+    private void resetDefault() {
+        Bennu.getInstance().setDefaultLdapServerIntegrationConfiguration(null);
+    }
+
     @RequestMapping(value = "/search/deleteSelected", method = RequestMethod.POST)
     public String processSearchToDeleteSelected(
             @RequestParam("ldapServerIntegrationConfigurations") List<LdapServerIntegrationConfiguration> ldapServerIntegrationConfigurations,
@@ -123,7 +133,7 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
                 + ldapServerIntegrationConfiguration.getExternalId();
     }
 
-    @RequestMapping(value = "/search/setdefault/{oid}")
+    @RequestMapping(value = "/search/setdefault/{oid}", method = RequestMethod.POST)
     public String processSearchToSetDefaultAction(
             @PathVariable("oid") LdapServerIntegrationConfiguration ldapServerIntegrationConfiguration, Model model) {
 
@@ -131,7 +141,7 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
         return search(null, null, model);
     }
 
-    @RequestMapping(value = "/search/testconnection/{oid}")
+    @RequestMapping(value = "/search/testconnection/{oid}", method = RequestMethod.POST)
     public String processSearchToTestConnectionAction(
             @PathVariable("oid") LdapServerIntegrationConfiguration ldapServerIntegrationConfiguration, Model model) {
 
