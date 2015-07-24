@@ -76,6 +76,7 @@ public class LdapIntegration {
     private static final String UL_ROLE_ATTRIBUTE = "ULRole";
     private static final String UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE = "ULInternalEmailAddr";
     private static final String UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE = "ULExternalEmailAddr";
+    private static final String INTERNET_EMAIL_ADDRESS = "InternetEmailAddress";
     private static final String UL_POSTAL_CODE_ATTRIBUTE = "ULPostalCode";
     private static final String UL_POSTAL_ADDR_ATTRIBUTE = "ULPostalAddr";
     private static final String UL_BIRTH_DATE_ATTRIBUTE = "ULBirthDate";
@@ -143,7 +144,6 @@ public class LdapIntegration {
             }
             attributesMap.add(UL_COURSES + getSchoolCode(), courses.toArray(new String[] {}));
         } else {
-            attributesMap.add(UL_COURSES + getSchoolCode(), new String[] { "" });
             attributesMap.add(UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), "FALSE");
         }
 
@@ -535,12 +535,15 @@ public class LdapIntegration {
                     QueryReply query =
                             client.query("cn=" + person.getUsername(), new String[] {
                                     UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + schoolCode, UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE,
-                                    UL_BIRTH_DATE_ATTRIBUTE, UL_BI_ATTRIBUTE, UL_SEX_ATTRIBUTE, GIVEN_NAME_ATTRIBUTE,
-                                    LAST_NAME_ATTRIBUTE });
+                                    INTERNET_EMAIL_ADDRESS, UL_BIRTH_DATE_ATTRIBUTE, UL_BI_ATTRIBUTE, UL_SEX_ATTRIBUTE,
+                                    GIVEN_NAME_ATTRIBUTE, LAST_NAME_ATTRIBUTE });
                     if (query.getNumberOfResults() == 1) {
                         QueryReplyElement queryReplyElement = query.getResults().get(0);
                         String institutionalEmail =
                                 queryReplyElement.getSimpleAttribute(UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + schoolCode);
+                        if (StringUtils.isEmpty(institutionalEmail)) {
+                            institutionalEmail = queryReplyElement.getSimpleAttribute(INTERNET_EMAIL_ADDRESS);
+                        }
                         String personalEmail = queryReplyElement.getSimpleAttribute(UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE);
                         String birthDate = queryReplyElement.getSimpleAttribute(UL_BIRTH_DATE_ATTRIBUTE);
                         String documentID = queryReplyElement.getSimpleAttribute(UL_BI_ATTRIBUTE);
