@@ -50,7 +50,7 @@ public class SyncPersonWithLdap implements SyncPersonWithExternalServices {
     @Override
     public boolean syncStudentToExternal(Student student) {
         return Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
-                && LdapIntegration.updateStudentStatus(student);
+                && LdapIntegration.updatePersonInLdap(student.getPerson()) && LdapIntegration.updateStudentStatus(student);
     }
 
 }
