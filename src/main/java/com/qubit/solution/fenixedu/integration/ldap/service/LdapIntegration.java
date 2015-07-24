@@ -33,10 +33,13 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.fenixedu.academic.domain.Country;
+import org.fenixedu.academic.domain.ExecutionYear;
 import org.fenixedu.academic.domain.Person;
+import org.fenixedu.academic.domain.candidacy.StudentCandidacy;
 import org.fenixedu.academic.domain.contacts.EmailAddress;
 import org.fenixedu.academic.domain.contacts.PartyContact;
 import org.fenixedu.academic.domain.contacts.PartyContactType;
@@ -46,6 +49,7 @@ import org.fenixedu.academic.domain.student.Registration;
 import org.fenixedu.academic.domain.student.Student;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.bennu.core.domain.User;
+import org.fenixedu.bennu.core.groups.DynamicGroup;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonthDay;
@@ -139,7 +143,7 @@ public class LdapIntegration {
             }
             attributesMap.add(UL_COURSES + getSchoolCode(), courses.toArray(new String[] {}));
         } else {
-            attributesMap.add(UL_COURSES + getSchoolCode(), new String[] { "noCourses" });
+            attributesMap.add(UL_COURSES + getSchoolCode(), new String[] { "" });
             attributesMap.add(UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), "FALSE");
         }
 
@@ -152,8 +156,8 @@ public class LdapIntegration {
         AttributesMap attributesMap = new AttributesMap();
 
         boolean isStudent = isStudent(person);
-        boolean isTeacher = person.getTeacher() != null && person.getTeacher().isActiveContractedTeacher();
-        boolean isEmployee = false; // NOT YET IMPLEMENTED;
+        boolean isTeacher = isTeacher(person);
+        boolean isEmployee = isEmployee(person);
 
         // REQUIRED 
         attributesMap.add(UL_STUDENT_ACTIVE_ATTRIBUTE + schooldCode, String.valueOf(isStudent).toUpperCase());
@@ -201,8 +205,48 @@ public class LdapIntegration {
     }
 
     private static boolean isStudent(Person person) {
-        boolean isStudent = person.getStudent() != null && !person.getStudent().getActiveRegistrations().isEmpty();
-        return isStudent;
+        boolean hasActiveRegistrationsWithEnrolments = false;
+        Student student = person.getStudent();
+        ExecutionYear currentExecutionYear = ExecutionYear.readCurrentExecutionYear();
+
+        if (student != null) {
+            hasActiveRegistrationsWithEnrolments =
+                    student.getActiveRegistrations().stream()
+                            .filter(registration -> !registration.getEnrolments(currentExecutionYear).isEmpty())
+                            .collect(Collectors.toList()).isEmpty();
+        }
+        //
+        // Detect if it's 1st year, 1st time
+        //
+        boolean isFirstYearFirstTime =
+                person.getCandidaciesSet()
+                        .stream()
+                        .filter(candidacy -> candidacy instanceof StudentCandidacy)
+                        .map(StudentCandidacy.class::cast)
+                        .anyMatch(
+                                studentCandidacy -> studentCandidacy.isActive() && studentCandidacy.getEntryPhase() != null
+                                        && studentCandidacy.getExecutionYear() == currentExecutionYear);
+
+        // Detect if is other kind of candidate 
+        boolean isOtherKindOfCandidate =
+                person.getCandidaciesSet()
+                        .stream()
+                        .filter(candidacy -> candidacy instanceof StudentCandidacy)
+                        .map(StudentCandidacy.class::cast)
+                        .anyMatch(
+                                candidacy -> candidacy.getRegistration() != null && candidacy.getRegistration().isActive()
+                                        && candidacy.getExecutionYear() == currentExecutionYear);
+
+        return hasActiveRegistrationsWithEnrolments || isFirstYearFirstTime || isOtherKindOfCandidate;
+    }
+
+    private static boolean isTeacher(Person person) {
+        return person.getTeacher() != null && person.getTeacher().getTeacherAuthorization().isPresent();
+
+    }
+
+    private static boolean isEmployee(Person person) {
+        return DynamicGroup.get("employees").isMember(person.getUser());
     }
 
     public static LdapServerIntegrationConfiguration getDefaultConfiguration() {
@@ -308,7 +352,7 @@ public class LdapIntegration {
                         UL_SEX_ATTRIBUTE, UL_BIRTH_DATE_ATTRIBUTE, UL_POSTAL_ADDR_ATTRIBUTE, UL_POSTAL_CODE_ATTRIBUTE,
                         UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + getSchoolCode(),
                         UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_TEACHER_ACTIVE_ATTRIBUTE + getSchoolCode(),
-                        UL_TEACHER_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_FENIXUSER };
+                        UL_EMPLOYEE_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_FENIXUSER };
 
         return retrieveSyncInfo(collectAttributeMap(person), fields, person.getUsername(), defaultConfiguration);
     }
