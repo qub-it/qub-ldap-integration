@@ -59,7 +59,6 @@ import com.qubit.terra.ldapclient.QueryReplyElement;
 public class ULisboaProfileResource extends ProfileResource {
 
     private static final String FENIX_USER_ATTRIBUTE = "ULFenixUser";
-    private static final String FENIX_USER_ALIGNED_ATTRIBUTE = "ULFenixUserAligned";
 
     @Context
     HttpServletRequest request;
@@ -84,25 +83,24 @@ public class ULisboaProfileResource extends ProfileResource {
             return super.login(username, password);
         } else {
             LdapClient client = defaultLdapServer.getClient();
-            boolean verifyCredentials = client.verifyCredentials(username.replace("@campus.ul.pt", ""), password);
+            String ldapUsername = username.replace("@campus.ul.pt", "");
+            boolean verifyCredentials = client.verifyCredentials(ldapUsername, password);
 
             if (verifyCredentials) {
-                User user = User.findByUsername(username);
+                User user = User.findByUsername(ldapUsername);
                 if (user == null) {
                     // We have been able to login into LDAP but there's no matching
                     // user in Fenix yet, this happens when there was an user alignment
                     // so it's time for us to login into ldap and check that.
                     if (client.login()) {
                         try {
-                            QueryReply query =
-                                    client.query("(cn=" + username + ")", new String[] { FENIX_USER_ATTRIBUTE,
-                                            FENIX_USER_ALIGNED_ATTRIBUTE });
+                            QueryReply query = client.query("(cn=" + ldapUsername + ")", new String[] { FENIX_USER_ATTRIBUTE });
 
                             if (query.getNumberOfResults() == 1) {
                                 QueryReplyElement queryReplyElement = query.getResults().get(0);
                                 String fenixUsername = queryReplyElement.getSimpleAttribute(FENIX_USER_ATTRIBUTE);
-                                if (!fenixUsername.equals(username)) {
-                                    usernameAlign(fenixUsername, username);
+                                if (!fenixUsername.equals(ldapUsername)) {
+                                    usernameAlign(fenixUsername, ldapUsername);
                                 }
 
                             }
@@ -111,7 +109,7 @@ public class ULisboaProfileResource extends ProfileResource {
                         }
                     }
                 }
-                Authenticate.login(request.getSession(true), username);
+                Authenticate.login(request.getSession(true), ldapUsername);
                 return view(null, Void.class, AuthenticatedUserViewer.class);
             }
         }
