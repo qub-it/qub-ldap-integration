@@ -211,7 +211,7 @@ public class LdapIntegration {
 
         if (student != null) {
             hasActiveRegistrationsWithEnrolments =
-                    student.getActiveRegistrations().stream()
+                    !student.getActiveRegistrations().stream()
                             .filter(registration -> !registration.getEnrolments(currentExecutionYear).isEmpty())
                             .collect(Collectors.toList()).isEmpty();
         }
