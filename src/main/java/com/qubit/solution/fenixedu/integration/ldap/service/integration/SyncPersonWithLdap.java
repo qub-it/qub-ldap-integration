@@ -28,6 +28,7 @@ package com.qubit.solution.fenixedu.integration.ldap.service.integration;
 
 import org.fenixedu.academic.domain.Person;
 import org.fenixedu.academic.domain.student.Student;
+import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.ulisboa.specifications.domain.student.access.importation.external.SyncPersonWithExternalServices;
 
 import com.qubit.solution.fenixedu.integration.ldap.service.LdapIntegration;
@@ -36,17 +37,20 @@ public class SyncPersonWithLdap implements SyncPersonWithExternalServices {
 
     @Override
     public boolean syncPersonToExternal(Person person) {
-        return LdapIntegration.updatePersonInLdap(person);
+        return Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
+                && LdapIntegration.updatePersonInLdap(person);
     }
 
     @Override
     public boolean syncPersonFromExternal(Person person) {
-        return LdapIntegration.updatePersonUsingLdap(person);
+        return Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
+                && LdapIntegration.updatePersonUsingLdap(person);
     }
 
     @Override
     public boolean syncStudentToExternal(Student student) {
-        return LdapIntegration.updateStudentStatus(student);
+        return Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
+                && LdapIntegration.updateStudentStatus(student);
     }
 
 }
