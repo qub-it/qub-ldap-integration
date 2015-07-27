@@ -208,12 +208,15 @@ public class LdapIntegration {
         boolean hasActiveRegistrationsWithEnrolments = false;
         Student student = person.getStudent();
         ExecutionYear currentExecutionYear = ExecutionYear.readCurrentExecutionYear();
+        ExecutionYear previousExecutionYear = currentExecutionYear.getPreviousExecutionYear();
 
         if (student != null) {
             hasActiveRegistrationsWithEnrolments =
-                    !student.getActiveRegistrations().stream()
-                            .filter(registration -> !registration.getEnrolments(currentExecutionYear).isEmpty())
-                            .collect(Collectors.toList()).isEmpty();
+                    !student.getActiveRegistrations()
+                            .stream()
+                            .filter(registration -> !registration.getEnrolments(currentExecutionYear).isEmpty()
+                                    || !registration.getEnrolments(previousExecutionYear).isEmpty()).collect(Collectors.toList())
+                            .isEmpty();
         }
         //
         // Detect if it's 1st year, 1st time
