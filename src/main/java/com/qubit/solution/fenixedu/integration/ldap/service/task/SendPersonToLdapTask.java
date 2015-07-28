@@ -97,13 +97,17 @@ public class SendPersonToLdapTask extends CustomTask {
             Thread.currentThread().setName(SendPersonToLdapWorker.class.getSimpleName() + "-" + threadID);
             int i = 0;
             for (Person person : this.people) {
-                if (++i % 100 == 0) {
-                    LOG.info(new DateTime().toString("HH:mm:ss") + ": " + i + " / " + totalSize + " done");
-                }
-                LdapIntegration.updatePersonInLdap(person);
-                Student student = person.getStudent();
-                if (student != null) {
-                    LdapIntegration.updateStudentStatus(student);
+                try {
+                    if (++i % 100 == 0) {
+                        LOG.info(new DateTime().toString("HH:mm:ss") + ": " + i + " / " + totalSize + " done");
+                    }
+                    LdapIntegration.updatePersonInLdap(person);
+                    Student student = person.getStudent();
+                    if (student != null) {
+                        LdapIntegration.updateStudentStatus(student);
+                    }
+                } catch (Throwable t) {
+                    LOG.error("Problem sending person : " + person.getName() + "(user: " + person.getUsername() + ") to ldap", t);
                 }
             }
             LOG.info("Finished thread " + threadID);
