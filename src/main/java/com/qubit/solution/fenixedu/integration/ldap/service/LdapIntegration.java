@@ -167,7 +167,12 @@ public class LdapIntegration {
         attributesMap.add(UL_EMPLOYEE_ACTIVE_ATTRIBUTE + schooldCode, String.valueOf(isEmployee).toUpperCase());
         attributesMap.add(FULL_NAME_ATTRIBUTE, person.getName());
         attributesMap.add(GIVEN_NAME_ATTRIBUTE, person.getProfile().getGivenNames());
-        attributesMap.add(LAST_NAME_ATTRIBUTE, person.getProfile().getFamilyNames());
+        String familyNames = person.getProfile().getFamilyNames();
+        if (!familyNames.isEmpty()) {
+            attributesMap.add(LAST_NAME_ATTRIBUTE, familyNames);
+        } else {
+            attributesMap.add(LAST_NAME_ATTRIBUTE, "-");
+        }
         attributesMap.add(UL_BI_ATTRIBUTE, person.getDocumentIdNumber());
         YearMonthDay dateOfBirthYearMonthDay = person.getDateOfBirthYearMonthDay();
         if (dateOfBirthYearMonthDay != null) {
@@ -178,7 +183,10 @@ public class LdapIntegration {
 
         // OPTIONAL
         attributesMap.add(UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, person.getInstitutionalEmailAddressValue());
-        attributesMap.add(UL_SEX_ATTRIBUTE, person.getGender().toString().substring(0, 1));
+        Gender gender = person.getGender();
+        if (gender != null) {
+            attributesMap.add(UL_SEX_ATTRIBUTE, gender.toString().substring(0, 1));
+        }
         Country countryOfBirth = person.getCountryOfBirth();
         if (countryOfBirth != null) {
             attributesMap.add(CO_ATTRIBUTE, countryOfBirth.getName());
@@ -436,7 +444,11 @@ public class LdapIntegration {
         try {
             if (client.login()) {
                 try {
-                    QueryReply query = client.query("cn=" + user.getUsername(), new String[] { UL_FENIXUSER });
+                    String usernameToSearch = user.getUsername();
+
+                    QueryReply query =
+                            client.query("(|(cn=" + usernameToSearch + ")(ULFenixUser=" + usernameToSearch + "))",
+                                    new String[] { UL_FENIXUSER });
                     if (query.getNumberOfResults() == 1) {
                         isAvailable = true;
                     }
