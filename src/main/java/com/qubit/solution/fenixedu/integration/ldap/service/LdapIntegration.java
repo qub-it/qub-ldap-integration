@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.fenixedu.academic.domain.Country;
+import org.fenixedu.academic.domain.ExecutionSemester;
 import org.fenixedu.academic.domain.ExecutionYear;
 import org.fenixedu.academic.domain.Person;
 import org.fenixedu.academic.domain.candidacy.StudentCandidacy;
@@ -47,6 +48,7 @@ import org.fenixedu.academic.domain.contacts.PhysicalAddress;
 import org.fenixedu.academic.domain.person.Gender;
 import org.fenixedu.academic.domain.student.Registration;
 import org.fenixedu.academic.domain.student.Student;
+import org.fenixedu.academic.domain.time.calendarStructure.AcademicInterval;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.bennu.core.domain.User;
 import org.fenixedu.bennu.core.groups.DynamicGroup;
@@ -244,7 +246,21 @@ public class LdapIntegration {
     }
 
     private static boolean isTeacher(Person person) {
-        return person.getTeacher() != null && person.getTeacher().getTeacherAuthorization().isPresent();
+        ExecutionYear readCurrentExecutionYear = ExecutionYear.readCurrentExecutionYear();
+        ExecutionYear previousExecutionYear = readCurrentExecutionYear.getPreviousExecutionYear();
+
+        List<AcademicInterval> intervals = new ArrayList<AcademicInterval>();
+        intervals.add(readCurrentExecutionYear.getAcademicInterval());
+        intervals.add(previousExecutionYear.getAcademicInterval());
+        intervals.addAll(readCurrentExecutionYear.getExecutionPeriodsSet().stream().map(ExecutionSemester::getAcademicInterval)
+                .collect(Collectors.toList()));
+        intervals.addAll(previousExecutionYear.getExecutionPeriodsSet().stream().map(ExecutionSemester::getAcademicInterval)
+                .collect(Collectors.toList()));
+
+        return person.getTeacher() != null
+                && !person.getTeacher().getTeacherAuthorizationStream()
+                        .filter(authorization -> intervals.contains(authorization.getExecutionSemester().getAcademicInterval()))
+                        .collect(Collectors.toList()).isEmpty();
 
     }
 
