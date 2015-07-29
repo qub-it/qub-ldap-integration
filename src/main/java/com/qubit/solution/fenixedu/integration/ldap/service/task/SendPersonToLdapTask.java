@@ -101,10 +101,12 @@ public class SendPersonToLdapTask extends CustomTask {
                     if (++i % 100 == 0) {
                         LOG.info(new DateTime().toString("HH:mm:ss") + ": " + i + " / " + totalSize + " done");
                     }
-                    LdapIntegration.updatePersonInLdap(person);
-                    Student student = person.getStudent();
-                    if (student != null) {
-                        LdapIntegration.updateStudentStatus(student);
+                    if (LdapIntegration.isUpdateNeeded(person)) {
+                        LdapIntegration.updatePersonInLdap(person);
+                        Student student = person.getStudent();
+                        if (student != null) {
+                            LdapIntegration.updateStudentStatus(student);
+                        }
                     }
                 } catch (Throwable t) {
                     LOG.error("Problem sending person : " + person.getName() + "(user: " + person.getUsername() + ") to ldap", t);

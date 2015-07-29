@@ -54,16 +54,15 @@ ${portal.toolkit()}
 			code="label.event.sentToLdap" /></a> | &nbsp; &nbsp; <span
 		class="glyphicon glyphicon-cog" aria-hidden="true"></span>&nbsp;<a
 		class="" href='javascript:receiveFromLdap();'><spring:message
-			code="label.event.receiveFromLdap" /></a>
-			| &nbsp; &nbsp; <span
+			code="label.event.receiveFromLdap" /></a> | &nbsp; &nbsp; <span
 		class="glyphicon glyphicon-cog" aria-hidden="true"></span>&nbsp;<a
 		class="" href='javascript:removeFromLdap();'><spring:message
 			code="label.event.removeFromLdap" /></a>
-				<c:if test="${not empty studentSyncInformation}">
-		| &nbsp; &nbsp; <span
-		class="glyphicon glyphicon-cog" aria-hidden="true"></span>&nbsp;<a
-		class="" href='javascript:sendStudenToLdap();'><spring:message
-			code="label.event.sendStudenToLdap" /></a>
+	<c:if test="${not empty studentSyncInformation}">
+		| &nbsp; &nbsp; <span class="glyphicon glyphicon-cog"
+			aria-hidden="true"></span>&nbsp;<a class=""
+			href='javascript:sendStudenToLdap();'><spring:message
+				code="label.event.sendStudenToLdap" /></a>
 	</c:if>
 </div>
 
@@ -71,15 +70,15 @@ ${portal.toolkit()}
 	function sendToLdap() {
 		$('#sendToLdap').modal('toggle')
 	}
-	
+
 	function removeFromLdap() {
 		$('#removeFromLdap').modal('toggle')
 	}
-	
+
 	function receiveFromLdap() {
 		$('#receiveFromLdap').modal('toggle')
 	}
-	
+
 	<c:if test="${not empty studentSyncInformation}">
 	function sendStudenToLdap() {
 		$('#sendStudenToLdap').modal('toggle')
@@ -89,78 +88,134 @@ ${portal.toolkit()}
 
 <c:if test="${not empty studentSyncInformation}">
 	<div class="modal fade" id="sendStudenToLdap">
-	  <div class="modal-dialog">
-	    <div class="modal-content">
-	      <div class="modal-header">
-	        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-	        <h4 class="modal-title"><spring:message code="label.confirmation"/></h4>
-	      </div>
-	      <div class="modal-body">
-	        <p><spring:message code = "label.confirmation.sendToLdap"/></p>
-	      </div>
-	      <div class="modal-footer">
-	        <button type="button" class="btn btn-default" data-dismiss="modal"><spring:message code = "label.close"/></button>
-	        <a id="deleteLink" class="btn btn-danger" href='javascript:$("#sendStudentToLdapForm").submit()'> <spring:message code = "label.send"/></a>
-	      </div>
-	    </div><!-- /.modal-content -->
-	  </div><!-- /.modal-dialog -->
-	</div><!-- /.modal -->
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal"
+						aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+					<h4 class="modal-title">
+						<spring:message code="label.confirmation" />
+					</h4>
+				</div>
+				<div class="modal-body">
+					<p>
+						<spring:message code="label.confirmation.sendToLdap" />
+					</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">
+						<spring:message code="label.close" />
+					</button>
+					<a id="deleteLink" class="btn btn-danger"
+						href='javascript:$("#sendStudentToLdapForm").submit()'> <spring:message
+							code="label.send" /></a>
+				</div>
+			</div>
+			<!-- /.modal-content -->
+		</div>
+		<!-- /.modal-dialog -->
+	</div>
+	<!-- /.modal -->
 </c:if>
 
 
 <div class="modal fade" id="sendToLdap">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title"><spring:message code="label.confirmation"/></h4>
-      </div>
-      <div class="modal-body">
-        <p><spring:message code = "label.confirmation.sendToLdap"/></p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal"><spring:message code = "label.close"/></button>
-        <a id="deleteLink" class="btn btn-danger" href='javascript:$("#sendToLdapForm").submit()'> <spring:message code = "label.send"/></a>
-      </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"
+					aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+				<h4 class="modal-title">
+					<spring:message code="label.confirmation" />
+				</h4>
+			</div>
+			<div class="modal-body">
+				<p>
+					<spring:message code="label.confirmation.sendToLdap" />
+				</p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">
+					<spring:message code="label.close" />
+				</button>
+				<a id="deleteLink" class="btn btn-danger"
+					href='javascript:$("#sendToLdapForm").submit()'> <spring:message
+						code="label.send" /></a>
+			</div>
+		</div>
+		<!-- /.modal-content -->
+	</div>
+	<!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
 
 <div class="modal fade" id="removeFromLdap">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title"><spring:message code="label.confirmation"/></h4>
-      </div>
-      <div class="modal-body">
-        <p><spring:message code = "label.confirmation.removeFromLdap"/></p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal"><spring:message code = "label.close"/></button>
-        <a id="deleteLink" class="btn btn-danger" href='javascript:$("removeFromLdap").submit()'> <spring:message code = "label.delete"/></a>
-      </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"
+					aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+				<h4 class="modal-title">
+					<spring:message code="label.confirmation" />
+				</h4>
+			</div>
+			<div class="modal-body">
+				<p>
+					<spring:message code="label.confirmation.removeFromLdap" />
+				</p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">
+					<spring:message code="label.close" />
+				</button>
+				<a id="deleteLink" class="btn btn-danger"
+					href='javascript:$("#removeFromLdapForm").submit()'> <spring:message
+						code="label.delete" /></a>
+			</div>
+		</div>
+		<!-- /.modal-content -->
+	</div>
+	<!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
 
 <div class="modal fade" id="receiveFromLdap">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title"><spring:message code="label.confirmation"/></h4>
-      </div>
-      <div class="modal-body">
-        <p><spring:message code = "label.confirmation.receiveFromLdap"/></p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal"><spring:message code = "label.close"/></button>
-        <a id="deleteLink" class="btn btn-danger" href='javascript:$("#receiveFromLdapForm").submit()'> <spring:message code = "label.receive"/></a>
-      </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"
+					aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+				<h4 class="modal-title">
+					<spring:message code="label.confirmation" />
+				</h4>
+			</div>
+			<div class="modal-body">
+				<p>
+					<spring:message code="label.confirmation.receiveFromLdap" />
+				</p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">
+					<spring:message code="label.close" />
+				</button>
+				<a id="deleteLink" class="btn btn-danger"
+					href='javascript:$("#receiveFromLdapForm").submit()'> <spring:message
+						code="label.receive" /></a>
+			</div>
+		</div>
+		<!-- /.modal-content -->
+	</div>
+	<!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
 
 
 <form id="sendToLdapForm"
@@ -171,14 +226,14 @@ ${portal.toolkit()}
 	action="${pageContext.request.contextPath}/ldap/sync/person/receivefromldap/${person.externalId}"
 	method="POST"></form>
 
-<form id="removeFromLdap"
-	action="${pageContext.request.contextPath}/ldap/sync/person/removeFromLdap/${person.externalId}"
+<form id="removeFromLdapForm"
+	action="${pageContext.request.contextPath}/ldap/sync/person/removefromldap/${person.externalId}"
 	method="POST"></form>
-	
+
 <c:if test="${not empty studentSyncInformation}">
-<form id="sendStudentToLdapForm"
-	action="${pageContext.request.contextPath}/ldap/sync/person/sendstudenttoldap/${person.externalId}"
-	method="POST"></form>
+	<form id="sendStudentToLdapForm"
+		action="${pageContext.request.contextPath}/ldap/sync/person/sendstudenttoldap/${person.externalId}"
+		method="POST"></form>
 </c:if>
 
 
@@ -251,7 +306,7 @@ ${portal.toolkit()}
 					<th><spring:message code="label.attributes.ldap" /></th>
 				</tr>
 				<c:forEach var="attribute" items="${studentSyncInformation}">
-	
+
 					<tr>
 						<th>${attribute.key}</th>
 						<td>${attribute.value[0]}</td>

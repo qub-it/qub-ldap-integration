@@ -66,6 +66,12 @@ public class PersonController extends LdapBaseController {
     public String syncPerson(@PathVariable("oid") Person person, Model model) {
         setPerson(person, model);
         model.addAttribute("syncInformation", LdapIntegration.retrieveSyncInformation(person));
+        boolean updateNeeded = LdapIntegration.isUpdateNeeded(person);
+        if (updateNeeded) {
+            addWarningMessage("Data is not synchronized", model);
+        } else {
+            addInfoMessage("Data is synchronized", model);
+        }
         if (person.getStudent() != null) {
             model.addAttribute("studentSyncInformation", LdapIntegration.retrieveSyncInformation(person.getStudent()));
         }
@@ -93,7 +99,7 @@ public class PersonController extends LdapBaseController {
         return "redirect:/ldap/sync/person/syncPerson" + "/" + person.getExternalId();
     }
 
-    @RequestMapping(value = "/removeFromLDAP/{oid}", method = RequestMethod.POST)
+    @RequestMapping(value = "/removefromldap/{oid}", method = RequestMethod.POST)
     public String removeFromLdap(@PathVariable("oid") Person person, Model model) {
         setPerson(person, model);
         LdapIntegration.deleteUser(person);

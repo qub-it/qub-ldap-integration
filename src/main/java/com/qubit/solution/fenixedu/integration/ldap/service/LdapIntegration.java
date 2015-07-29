@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
@@ -52,6 +54,7 @@ import org.fenixedu.academic.domain.time.calendarStructure.AcademicInterval;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.bennu.core.domain.User;
 import org.fenixedu.bennu.core.groups.DynamicGroup;
+import org.fenixedu.ulisboa.specifications.domain.idcards.CgdCard;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonthDay;
@@ -90,6 +93,7 @@ public class LdapIntegration {
     private static final String LAST_NAME_ATTRIBUTE = "sn";
     private static final String GIVEN_NAME_ATTRIBUTE = "givenName";
     private static final String FULL_NAME_ATTRIBUTE = "FullName";
+    private static final String UL_MIFARE_ATTRIBUTE = "ULMifare";
 
     private static final String COMMON_NAME = "cn";
     // From ULFenixUser class
@@ -223,6 +227,11 @@ public class LdapIntegration {
 
         attributesMap.add(UL_FENIXUSER, person.getUsername());
 
+        CgdCard cgdCard = CgdCard.findByPerson(person);
+        if (cgdCard != null) {
+            attributesMap.add(UL_MIFARE_ATTRIBUTE + getSchoolCode(), cgdCard.getMifareCode());
+        }
+
         return attributesMap;
     }
 
@@ -252,7 +261,12 @@ public class LdapIntegration {
                                 studentCandidacy -> studentCandidacy.isActive() && studentCandidacy.getEntryPhase() != null
                                         && studentCandidacy.getExecutionYear() == currentExecutionYear);
 
-        // Detect if is other kind of candidate 
+        // Removing detecion of other kind of candidate (still leaving the code just in case) 
+        // Ana Rute asked us to not send other candidates has active students, only 1stYearFirstTime.
+        // This will be sent with the student flag active (and then synchronized with IDM) when they 
+        // finalize their candidacy situation and become an actual student
+        //
+        // 27 July 2015 - Paulo Abrantes
         boolean isOtherKindOfCandidate =
                 person.getCandidaciesSet()
                         .stream()
@@ -262,7 +276,7 @@ public class LdapIntegration {
                                 candidacy -> candidacy.getRegistration() != null && candidacy.getRegistration().isActive()
                                         && candidacy.getExecutionYear() == currentExecutionYear);
 
-        return hasActiveRegistrationsWithEnrolments || isFirstYearFirstTime || isOtherKindOfCandidate;
+        return hasActiveRegistrationsWithEnrolments || isFirstYearFirstTime;
     }
 
     private static boolean isTeacher(Person person) {
@@ -404,7 +418,7 @@ public class LdapIntegration {
                         UL_SEX_ATTRIBUTE, UL_BIRTH_DATE_ATTRIBUTE, UL_POSTAL_ADDR_ATTRIBUTE, UL_POSTAL_CODE_ATTRIBUTE,
                         UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + getSchoolCode(),
                         UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_TEACHER_ACTIVE_ATTRIBUTE + getSchoolCode(),
-                        UL_EMPLOYEE_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_FENIXUSER };
+                        UL_EMPLOYEE_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_MIFARE_ATTRIBUTE + getSchoolCode(), UL_FENIXUSER };
 
         return retrieveSyncInfo(collectAttributeMap(person), fields, person, defaultConfiguration);
     }
@@ -453,6 +467,40 @@ public class LdapIntegration {
             t.printStackTrace();
         }
         return ableToSend;
+    }
+
+    private static boolean isSynched(Map<String, String[]> syncInformation) {
+        Set<Entry<String, String[]>> entrySet = syncInformation.entrySet();
+        for (Entry<String, String[]> entry : entrySet) {
+            String[] parameter = entry.getValue();
+            String value0 = parameter[0];
+            String value1 = parameter[1];
+            //
+            // Yes yes... I know it's ugly.. but the date also has the time and we
+            // don't want that!
+            //
+            // 29 July 2015 - Paulo Abrantes
+            if (UL_BIRTH_DATE_ATTRIBUTE.equals(entry.getKey())) {
+                value0 = value0 != null ? value0.substring(0, 9) : null;
+                value1 = value1 != null ? value1.substring(0, 9) : null;
+            } else {
+                if ((parameter[0] == null && parameter[1] != null) || (parameter[0] != null && parameter[1] == null)
+                        || (!value0.equals(value1))) {
+                    return false;
+                }
+            }
+
+        }
+        return true;
+    }
+
+    public static boolean isUpdateNeeded(Person person) {
+        Map<String, String[]> retrieveSyncInformation = retrieveSyncInformation(person);
+        boolean isPersonUpdated = isSynched(retrieveSyncInformation);
+        boolean isStudentUpdated =
+                isPersonUpdated && (person.getStudent() == null || isSynched(retrieveSyncInformation(person.getStudent())));
+
+        return !isPersonUpdated || !isStudentUpdated;
     }
 
     public static boolean isUserAvailableInLdap(User user) {
@@ -562,8 +610,9 @@ public class LdapIntegration {
 
                     List<String> objectClasses = Arrays.asList(OBJECT_CLASSES_TO_ADD);
                     QueryReply query =
-                            client.query("(&(" + COMMON_NAME + "=" + personCommonName + ")(objectClass=" + STUDENT_CLASS_PREFIX
-                                    + getSchoolCode() + " ))", new String[] { COMMON_NAME });
+                            client.query("(&(" + COMMON_NAME + "=" + getCorrectCN(person.getUsername(), client)
+                                    + ")(objectClass=" + STUDENT_CLASS_PREFIX + getSchoolCode() + " ))",
+                                    new String[] { COMMON_NAME });
 
                     if (query.getNumberOfResults() == 1) {
                         // The person is a student so we have to add this class as well
