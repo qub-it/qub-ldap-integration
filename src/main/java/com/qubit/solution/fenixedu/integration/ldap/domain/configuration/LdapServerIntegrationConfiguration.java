@@ -26,14 +26,28 @@
  */
 package com.qubit.solution.fenixedu.integration.ldap.domain.configuration;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.fenixedu.academic.domain.Person;
 import org.fenixedu.academic.domain.exceptions.DomainException;
+import org.fenixedu.academic.domain.student.Student;
 import org.fenixedu.bennu.core.domain.Bennu;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import pt.ist.fenixframework.Atomic;
+import pt.ist.fenixframework.CallableWithoutException;
+import pt.ist.fenixframework.FenixFramework;
 
+import com.qubit.solution.fenixedu.integration.ldap.service.LdapIntegration;
 import com.qubit.terra.ldapclient.LdapClient;
 
 public class LdapServerIntegrationConfiguration extends LdapServerIntegrationConfiguration_Base {
+
+    private static final Logger LOG = LoggerFactory.getLogger(LdapServerIntegrationConfiguration.class);
 
     public LdapServerIntegrationConfiguration(String serverID, String username, String password, String url, String baseDomain) {
         super();
@@ -79,5 +93,83 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
 
     public LdapClient getClient() {
         return new LdapClient(getUsername(), getPassword(), getUrl(), getBaseDomain());
+    }
+
+    public void sendAllUsers() {
+        List<Person> collect =
+                Bennu.getInstance().getPartysSet().stream().filter(p -> p instanceof Person).map(Person.class::cast)
+                        .collect(Collectors.toList());
+
+        int threadNumber = 10;
+        int totalSize = collect.size();
+        int split = totalSize / threadNumber + (totalSize % threadNumber);
+
+        List<Thread> threads = new ArrayList<Thread>();
+
+        for (int i = 0; i < threadNumber; i++) {
+            int start = i * split;
+            int end = Math.min(start + split, totalSize);
+            SendPersonToLdapWorker sendPersonToLdapWorker = new SendPersonToLdapWorker(collect.subList(start, end), this);
+            Thread t = new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    FenixFramework.getTransactionManager().withTransaction(sendPersonToLdapWorker);
+                }
+            });
+            threads.add(t);
+            t.start();
+        }
+
+        for (Thread t : threads) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static class SendPersonToLdapWorker implements CallableWithoutException<Object> {
+
+        private List<Person> people;
+        private LdapServerIntegrationConfiguration configuration;
+
+        public SendPersonToLdapWorker(List<Person> people, LdapServerIntegrationConfiguration configuration) {
+            this.people = people;
+            this.configuration = configuration;
+        }
+
+        @Override
+        public Object call() {
+            long threadID = Thread.currentThread().getId();
+            int totalSize = this.people.size();
+            LOG.info("Starting thread  " + threadID + ". Processing " + totalSize);
+            Thread.currentThread().setName(SendPersonToLdapWorker.class.getSimpleName() + "-" + threadID);
+            int i = 0;
+            for (Person person : this.people) {
+                try {
+                    if (++i % 100 == 0) {
+                        LOG.info(new DateTime().toString("HH:mm:ss") + ": " + i + " / " + totalSize + " done");
+                    }
+                    if (LdapIntegration.isUpdateNeeded(person, configuration)) {
+                        LdapIntegration.updatePersonInLdap(person, configuration);
+                        Student student = person.getStudent();
+                        if (student != null) {
+                            LdapIntegration.updateStudentStatus(student, configuration);
+                        }
+                    }
+                } catch (Throwable t) {
+                    LOG.error("Problem sending person : " + person.getName() + "(user: " + person.getUsername() + ") to ldap", t);
+                }
+            }
+            LOG.info("Finished thread " + threadID);
+            return null;
+        }
+    }
+
+    public void deleteAllUsers() {
+        LdapIntegration.deleteUsers(Bennu.getInstance().getPartysSet().stream().filter(party -> party.isPerson())
+                .map(Person.class::cast).collect(Collectors.toList()));
     }
 }

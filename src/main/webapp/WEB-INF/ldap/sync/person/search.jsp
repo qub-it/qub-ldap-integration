@@ -30,6 +30,92 @@ ${portal.toolkit()}
 	</h1>
 </div>
 <%-- NAVIGATION --%>
+<div class="well well-sm" style="display: inline-block">
+		<span
+		class="glyphicon glyphicon-cog" aria-hidden="true"></span>&nbsp;<a
+		class="" href='javascript:sendAllUsersToLdap();'><spring:message
+			code="label.event.sendAllUsersToLdap" /></a> | &nbsp; &nbsp; <span
+		class="glyphicon glyphicon-cog" aria-hidden="true"></span>&nbsp;<a
+		class="" href='javascript:deleteAllUsersFromLdap();'><spring:message
+			code="label.event.deleteAllUsersFromLdap" /></a> 
+</div>
+
+<script type="text/javascript">
+	function sendAllUsersToLdap() {
+		$('#sendAllUsersToLdap').modal('toggle')
+	}
+
+	function deleteAllUsersFromLdap() {
+		$('#deleteAllUsersFromLdap').modal('toggle')
+	}
+</script>
+
+
+<div class="modal fade" id="sendAllUsersToLdap">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"
+					aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+				<h4 class="modal-title">
+					<spring:message code="label.confirmation" />
+				</h4>
+			</div>
+			<div class="modal-body">
+				<p>
+					<spring:message code="label.confirmation.sendAllToLdap" />
+				</p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">
+					<spring:message code="label.close" />
+				</button>
+				<a id="deleteLink" class="btn btn-danger"
+					href='javascript:$("#sendAllToLdapForm").submit()'> <spring:message
+						code="label.send" /></a>
+			</div>
+		</div>
+		<!-- /.modal-content -->
+	</div>
+	<!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+
+<div class="modal fade" id="deleteAllUsersFromLdap">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"
+					aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+				<h4 class="modal-title">
+					<spring:message code="label.confirmation" />
+				</h4>
+			</div>
+			<div class="modal-body">
+				<p>
+					<spring:message code="label.confirmation.deleteAllUsersFromLdap" />
+				</p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">
+					<spring:message code="label.close" />
+				</button>
+				<a id="deleteLink" class="btn btn-danger"
+					href='javascript:$("#deleteAllUsersFromLdapForm").submit()'> <spring:message
+						code="label.send" /></a>
+			</div>
+		</div>
+		<!-- /.modal-content -->
+	</div>
+	<!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+
+
 	<c:if test="${not empty infoMessages}">
 				<div class="alert alert-info" role="alert">
 					
@@ -128,6 +214,18 @@ ${portal.toolkit()}
 	</c:otherwise>
 </c:choose>
 
+
+
+<form id="sendAllToLdapForm"
+	action="${pageContext.request.contextPath}/ldap/sync/person/search/sendalluserstoldap/"
+	method="POST"></form>
+	
+	
+<form id="deleteAllUsersFromLdapForm"
+	action="${pageContext.request.contextPath}/ldap/sync/person/search/removeallusersfromldap/"
+	method="POST"></form>
+	
+	
 <script>
 	var searchpersonDataSet = [
 			<c:forEach items="${searchpersonResultsDataSet}" var="searchResult">

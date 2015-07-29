@@ -7,6 +7,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang.StringUtils;
 import org.fenixedu.academic.domain.Person;
 import org.fenixedu.academic.domain.organizationalStructure.Party;
+import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.bennu.spring.portal.SpringFunctionality;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.Model;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.qubit.solution.fenixedu.integration.ldap.domain.configuration.LdapServerIntegrationConfiguration;
 import com.qubit.solution.fenixedu.integration.ldap.service.LdapIntegration;
 import com.qubit.solution.fenixedu.integration.ldap.ui.LdapBaseController;
 import com.qubit.solution.fenixedu.integration.ldap.ui.LdapController;
@@ -60,6 +62,27 @@ public class PersonController extends LdapBaseController {
     @RequestMapping(value = "/search/view/{oid}")
     public String processSearchToViewAction(@PathVariable("oid") Person person, Model model) {
         return "redirect:/ldap/sync/person/syncPerson" + "/" + person.getExternalId();
+    }
+
+    @RequestMapping(value = "/search/sendalluserstoldap", method = RequestMethod.POST)
+    public String processSearchToSendAllUsers(Model model) {
+        LdapServerIntegrationConfiguration defaultLdapServerIntegrationConfiguration =
+                Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration();
+        if (defaultLdapServerIntegrationConfiguration != null) {
+            defaultLdapServerIntegrationConfiguration.sendAllUsers();
+        }
+
+        return "ldap/sync/person/search";
+    }
+
+    @RequestMapping(value = "/search/removeallusersfromldap", method = RequestMethod.POST)
+    public String processSearchToRemoveAllUsers(Model model) {
+        LdapServerIntegrationConfiguration defaultLdapServerIntegrationConfiguration =
+                Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration();
+        if (defaultLdapServerIntegrationConfiguration != null) {
+            defaultLdapServerIntegrationConfiguration.deleteAllUsers();
+        }
+        return "ldap/sync/person/search";
     }
 
     @RequestMapping(value = "/syncPerson/{oid}")

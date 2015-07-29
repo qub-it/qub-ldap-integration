@@ -30,6 +30,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +71,7 @@ import com.qubit.terra.ldapclient.QueryReply;
 import com.qubit.terra.ldapclient.QueryReplyElement;
 
 import edu.emory.mathcs.backport.java.util.Arrays;
+import edu.emory.mathcs.backport.java.util.Collections;
 
 public class LdapIntegration {
 
@@ -94,6 +96,7 @@ public class LdapIntegration {
     private static final String GIVEN_NAME_ATTRIBUTE = "givenName";
     private static final String FULL_NAME_ATTRIBUTE = "FullName";
     private static final String UL_MIFARE_ATTRIBUTE = "ULMifare";
+    private static final String UL_ALUMNI_ATTRIBUTE = "ULAlumni";
 
     private static final String COMMON_NAME = "cn";
     // From ULFenixUser class
@@ -152,20 +155,21 @@ public class LdapIntegration {
         return "{SSHA}" + BaseEncoding.base64().encode(finalArray).trim();
     }
 
-    private static AttributesMap collectAttributeMap(Student student) {
-        AttributesMap attributesMap = new AttributesMap();
+    private static void collecStudentAttributes(Student student, AttributesMap attributesMap) {
         attributesMap.add(UL_STUDENT_CODE + getSchoolCode(), String.valueOf(student.getNumber()));
         if (isStudent(student.getPerson())) {
-            attributesMap.add(UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), "TRUE");
             List<String> courses = new ArrayList<String>();
             for (Registration registration : student.getActiveRegistrations()) {
                 courses.add(registration.getDegreeCurricularPlanName() + " " + registration.getDegreeName());
             }
             attributesMap.add(UL_COURSES + getSchoolCode(), courses.toArray(new String[] {}));
-        } else {
-            attributesMap.add(UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), "FALSE");
         }
 
+    }
+
+    private static AttributesMap collectAttributeMap(Student student) {
+        AttributesMap attributesMap = new AttributesMap();
+        collecStudentAttributes(student, attributesMap);
         return attributesMap;
     }
 
@@ -177,11 +181,13 @@ public class LdapIntegration {
         boolean isStudent = isStudent(person);
         boolean isTeacher = isTeacher(person);
         boolean isEmployee = isEmployee(person);
+        boolean isAlumni = isAlumni(person);
 
         // REQUIRED 
         attributesMap.add(UL_STUDENT_ACTIVE_ATTRIBUTE + schooldCode, String.valueOf(isStudent).toUpperCase());
         attributesMap.add(UL_TEACHER_ACTIVE_ATTRIBUTE + schooldCode, String.valueOf(isTeacher).toUpperCase());
         attributesMap.add(UL_EMPLOYEE_ACTIVE_ATTRIBUTE + schooldCode, String.valueOf(isEmployee).toUpperCase());
+        attributesMap.add(UL_ALUMNI_ATTRIBUTE + schooldCode, String.valueOf(isAlumni).toUpperCase());
         attributesMap.add(FULL_NAME_ATTRIBUTE, person.getName());
         attributesMap.add(GIVEN_NAME_ATTRIBUTE, person.getProfile().getGivenNames());
         String familyNames = person.getProfile().getFamilyNames();
@@ -232,7 +238,15 @@ public class LdapIntegration {
             attributesMap.add(UL_MIFARE_ATTRIBUTE + getSchoolCode(), cgdCard.getMifareCode());
         }
 
+        if (person.getStudent() != null) {
+            collecStudentAttributes(person.getStudent(), attributesMap);
+        }
+
         return attributesMap;
+    }
+
+    private static boolean isAlumni(Person person) {
+        return !isStudent(person) && person.getStudent() != null && !person.getStudent().getRegistrationsSet().isEmpty();
     }
 
     private static boolean isStudent(Person person) {
@@ -312,38 +326,25 @@ public class LdapIntegration {
     }
 
     public static boolean deleteUser(Person person) {
-        return deleteUser(person, getDefaultConfiguration());
+        return deleteUser(Collections.singletonList(person), getDefaultConfiguration());
     }
 
-    public static boolean deleteUser(Person person, LdapServerIntegrationConfiguration configuration) {
+    public static boolean deleteUsers(Collection<Person> people) {
+        return deleteUser(people, getDefaultConfiguration());
+    }
+
+    public static boolean deleteUser(Collection<Person> people, LdapServerIntegrationConfiguration configuration) {
         boolean ableToSend = false;
         LdapClient client = configuration.getClient();
         try {
             if (client.login()) {
                 ableToSend = true;
-                client.deleteContext(getPersonCommonName(person, client, configuration));
-            }
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
-        return ableToSend;
-    }
-
-    public static boolean deleteUser(String username) {
-        return deleteUser(username, getDefaultConfiguration());
-    }
-
-    public static boolean deleteUser(String username, String password, LdapServerIntegrationConfiguration configuration) {
-        AttributesMap attributesMap = new AttributesMap();
-        attributesMap.add(UL_FENIXUSER, username);
-        attributesMap.add(USER_PASSWORD, password);
-
-        boolean ableToSend = false;
-        LdapClient client = configuration.getClient();
-        try {
-            if (client.login()) {
-                client.deleteContext(getObjectCommonName(username, client, configuration));
-                ableToSend = true;
+                for (Person person : people) {
+                    String personCommonName = getPersonCommonName(person, client, configuration);
+                    if (!personCommonName.equals(configuration.getUsername())) {
+                        client.deleteContext(personCommonName);
+                    }
+                }
             }
         } catch (Throwable t) {
             t.printStackTrace();
@@ -403,8 +404,7 @@ public class LdapIntegration {
     public static Map<String, String[]> retrieveSyncInformation(Student student,
             LdapServerIntegrationConfiguration defaultConfiguration) {
         return retrieveSyncInfo(collectAttributeMap(student), new String[] { UL_STUDENT_CODE + getSchoolCode(),
-                UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_COURSES + getSchoolCode() }, student.getPerson(),
-                defaultConfiguration);
+                UL_COURSES + getSchoolCode() }, student.getPerson(), defaultConfiguration);
     }
 
     public static Map<String, String[]> retrieveSyncInformation(Person person) {
@@ -418,7 +418,8 @@ public class LdapIntegration {
                         UL_SEX_ATTRIBUTE, UL_BIRTH_DATE_ATTRIBUTE, UL_POSTAL_ADDR_ATTRIBUTE, UL_POSTAL_CODE_ATTRIBUTE,
                         UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + getSchoolCode(),
                         UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_TEACHER_ACTIVE_ATTRIBUTE + getSchoolCode(),
-                        UL_EMPLOYEE_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_MIFARE_ATTRIBUTE + getSchoolCode(), UL_FENIXUSER };
+                        UL_EMPLOYEE_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_ALUMNI_ATTRIBUTE + getSchoolCode(),
+                        UL_MIFARE_ATTRIBUTE + getSchoolCode(), UL_FENIXUSER };
 
         return retrieveSyncInfo(collectAttributeMap(person), fields, person, defaultConfiguration);
     }
@@ -494,13 +495,18 @@ public class LdapIntegration {
         return true;
     }
 
-    public static boolean isUpdateNeeded(Person person) {
-        Map<String, String[]> retrieveSyncInformation = retrieveSyncInformation(person);
+    public static boolean isUpdateNeeded(Person person, LdapServerIntegrationConfiguration configuration) {
+        Map<String, String[]> retrieveSyncInformation = retrieveSyncInformation(person, configuration);
         boolean isPersonUpdated = isSynched(retrieveSyncInformation);
         boolean isStudentUpdated =
-                isPersonUpdated && (person.getStudent() == null || isSynched(retrieveSyncInformation(person.getStudent())));
+                isPersonUpdated
+                        && (person.getStudent() == null || isSynched(retrieveSyncInformation(person.getStudent(), configuration)));
 
         return !isPersonUpdated || !isStudentUpdated;
+    }
+
+    public static boolean isUpdateNeeded(Person person) {
+        return isUpdateNeeded(person, getDefaultConfiguration());
     }
 
     public static boolean isUserAvailableInLdap(User user) {
@@ -553,9 +559,16 @@ public class LdapIntegration {
             try {
                 AttributesMap attributesMap = collectAttributeMap(student);
                 List<String> objectClasses = new ArrayList<String>();
-                objectClasses.addAll(Arrays.asList(OBJECT_CLASSES_TO_ADD));
-                objectClasses.add(STUDENT_CLASS_PREFIX + getSchoolCode());
-                client.replaceInExistingContext(getPersonCommonName(person, client, configuration), objectClasses, attributesMap);
+                QueryReply query =
+                        client.query("(&(" + COMMON_NAME + "=" + getCorrectCN(person.getUsername(), client) + ")(objectClass="
+                                + STUDENT_CLASS_PREFIX + getSchoolCode() + " ))", new String[] { COMMON_NAME });
+                if (query.getNumberOfResults() == 1) {
+                    client.replaceInExistingContext(getPersonCommonName(person, client, configuration), objectClasses,
+                            attributesMap);
+                } else {
+                    objectClasses.add(STUDENT_CLASS_PREFIX + getSchoolCode());
+                    client.addToExistingContext(getPersonCommonName(person, client, configuration), objectClasses, attributesMap);
+                }
                 ableToUpdateStudent = true;
             } finally {
                 client.logout();
@@ -578,7 +591,9 @@ public class LdapIntegration {
             if (login) {
 
                 List<String> objectClasses = Arrays.asList(OBJECT_CLASSES_TO_ADD);
-
+                if (person.getStudent() != null) {
+                    objectClasses.add(STUDENT_CLASS_PREFIX + getSchoolCode());
+                }
                 try {
                     client.writeNewContext(getPersonCommonName(person, client, configuration), objectClasses,
                             collectAttributeMap(person));
