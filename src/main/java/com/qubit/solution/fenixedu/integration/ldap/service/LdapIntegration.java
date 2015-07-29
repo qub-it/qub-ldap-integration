@@ -590,7 +590,7 @@ public class LdapIntegration {
         try {
             if (login) {
 
-                List<String> objectClasses = Arrays.asList(OBJECT_CLASSES_TO_ADD);
+                List<String> objectClasses = new ArrayList<String>(Arrays.asList(OBJECT_CLASSES_TO_ADD));
                 if (person.getStudent() != null) {
                     objectClasses.add(STUDENT_CLASS_PREFIX + getSchoolCode());
                 }
