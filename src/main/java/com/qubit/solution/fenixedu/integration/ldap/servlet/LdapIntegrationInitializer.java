@@ -30,7 +30,7 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
 
-import org.fenixedu.bennu.core.domain.User;
+import org.fenixedu.academic.domain.Person;
 import org.fenixedu.ulisboa.specifications.domain.student.access.StudentAccessServices;
 
 import pt.ist.fenixframework.FenixFramework;
@@ -44,11 +44,11 @@ public class LdapIntegrationInitializer implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent event) {
-        FenixFramework.getDomainModel().registerDeletionListener(User.class, new DeletionListener<User>() {
+        FenixFramework.getDomainModel().registerDeletionListener(Person.class, new DeletionListener<Person>() {
 
             @Override
-            public void deleting(User user) {
-                LdapIntegration.deleteUser(user);
+            public void deleting(Person person) {
+                LdapIntegration.deleteUser(person);
             }
         });
         StudentAccessServices.subscribeSyncPerson(new SyncPersonWithLdap());

@@ -91,6 +91,7 @@ public class LdapIntegration {
     private static final String GIVEN_NAME_ATTRIBUTE = "givenName";
     private static final String FULL_NAME_ATTRIBUTE = "FullName";
 
+    private static final String COMMON_NAME = "cn";
     // From ULFenixUser class
     private static final String UL_FENIXUSER = "ULFenixUser";
 
@@ -101,18 +102,30 @@ public class LdapIntegration {
 
     private static String[] OBJECT_CLASSES_TO_ADD = { "person", "ULAuxUser", "ULFenixUser" };
     private static String[] OBJECT_CLASSES_TO_ADD_TEMP_USER = { "person", "ULFenixUser" };
+    private static final String STUDENT_CLASS_PREFIX = "ULAuxFac";
 
     private static String getSchoolCode() {
         return Bennu.getInstance().getInstitutionUnit().getAcronym();
     }
 
-    private static String getObjectCommonName(String username, LdapServerIntegrationConfiguration configuration) {
-        return "cn=" + username + "," + configuration.getBaseDomain();
+    private static String getCorrectCN(String username, LdapClient client) {
+        String ldapUsername = username;
+        String[] replyAttributes = new String[] { COMMON_NAME };
 
+        QueryReply query = client.query(UL_FENIXUSER + "=" + username, replyAttributes);
+        if (query.getNumberOfResults() == 1) {
+            QueryReplyElement next = query.getResults().iterator().next();
+            ldapUsername = next.getSimpleAttribute(COMMON_NAME);
+        }
+        return ldapUsername;
     }
 
-    private static String getPersonCommonName(Person person, LdapServerIntegrationConfiguration configuration) {
-        return getObjectCommonName(person.getUsername(), configuration);
+    private static String getObjectCommonName(String username, LdapClient client, LdapServerIntegrationConfiguration configuration) {
+        return COMMON_NAME + "=" + getCorrectCN(username, client) + "," + configuration.getBaseDomain();
+    }
+
+    private static String getPersonCommonName(Person person, LdapClient client, LdapServerIntegrationConfiguration configuration) {
+        return getObjectCommonName(person.getUsername(), client, configuration);
     }
 
     public static String generateLdapPassword(String password, String salt) {
@@ -168,7 +181,7 @@ public class LdapIntegration {
         attributesMap.add(FULL_NAME_ATTRIBUTE, person.getName());
         attributesMap.add(GIVEN_NAME_ATTRIBUTE, person.getProfile().getGivenNames());
         String familyNames = person.getProfile().getFamilyNames();
-        if (!familyNames.isEmpty()) {
+        if (!StringUtils.isEmpty(familyNames)) {
             attributesMap.add(LAST_NAME_ATTRIBUTE, familyNames);
         } else {
             attributesMap.add(LAST_NAME_ATTRIBUTE, "-");
@@ -210,7 +223,6 @@ public class LdapIntegration {
 
         attributesMap.add(UL_FENIXUSER, person.getUsername());
 
-        attributesMap.add(UL_COURSES + getSchoolCode(), new String[] {});
         return attributesMap;
     }
 
@@ -285,8 +297,22 @@ public class LdapIntegration {
         return defaultLdapServerIntegrationConfiguration;
     }
 
-    public static boolean deleteUser(User user) {
-        return deleteUser(user.getUsername());
+    public static boolean deleteUser(Person person) {
+        return deleteUser(person, getDefaultConfiguration());
+    }
+
+    public static boolean deleteUser(Person person, LdapServerIntegrationConfiguration configuration) {
+        boolean ableToSend = false;
+        LdapClient client = configuration.getClient();
+        try {
+            if (client.login()) {
+                ableToSend = true;
+                client.deleteContext(getPersonCommonName(person, client, configuration));
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+        return ableToSend;
     }
 
     public static boolean deleteUser(String username) {
@@ -302,8 +328,7 @@ public class LdapIntegration {
         LdapClient client = configuration.getClient();
         try {
             if (client.login()) {
-                client.writeNewContext(getObjectCommonName(username, configuration),
-                        Arrays.asList(OBJECT_CLASSES_TO_ADD_TEMP_USER), attributesMap);
+                client.deleteContext(getObjectCommonName(username, client, configuration));
                 ableToSend = true;
             }
         } catch (Throwable t) {
@@ -322,7 +347,7 @@ public class LdapIntegration {
     // position 0 local, position 1 ldap info 
     //
 
-    private static Map<String, String[]> retrieveSyncInfo(AttributesMap collectedMap, String[] fields, String username,
+    private static Map<String, String[]> retrieveSyncInfo(AttributesMap collectedMap, String[] fields, Person person,
             LdapServerIntegrationConfiguration defaultConfiguration) {
         Map<String, String[]> map = new LinkedHashMap<String, String[]>();
 
@@ -338,7 +363,7 @@ public class LdapIntegration {
 
         if (client.login()) {
             try {
-                QueryReply query = client.query("cn=" + username, fields);
+                QueryReply query = client.query(COMMON_NAME + "=" + getCorrectCN(person.getUsername(), client), fields);
                 if (query.getNumberOfResults() == 1) {
                     QueryReplyElement queryReplyElement = query.getResults().get(0);
                     for (String field : fields) {
@@ -364,7 +389,7 @@ public class LdapIntegration {
     public static Map<String, String[]> retrieveSyncInformation(Student student,
             LdapServerIntegrationConfiguration defaultConfiguration) {
         return retrieveSyncInfo(collectAttributeMap(student), new String[] { UL_STUDENT_CODE + getSchoolCode(),
-                UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_COURSES + getSchoolCode() }, student.getPerson().getUsername(),
+                UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_COURSES + getSchoolCode() }, student.getPerson(),
                 defaultConfiguration);
     }
 
@@ -381,7 +406,7 @@ public class LdapIntegration {
                         UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_TEACHER_ACTIVE_ATTRIBUTE + getSchoolCode(),
                         UL_EMPLOYEE_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_FENIXUSER };
 
-        return retrieveSyncInfo(collectAttributeMap(person), fields, person.getUsername(), defaultConfiguration);
+        return retrieveSyncInfo(collectAttributeMap(person), fields, person, defaultConfiguration);
     }
 
     private static StringBuilder concatenateValues(List<String> list) {
@@ -409,7 +434,7 @@ public class LdapIntegration {
             if (client.login()) {
                 @SuppressWarnings("unchecked")
                 List<String> classesList = new ArrayList<String>(Arrays.asList(OBJECT_CLASSES_TO_ADD_TEMP_USER));
-                client.writeNewContext(getObjectCommonName(username, configuration), classesList, attributesMap);
+                client.writeNewContext(getObjectCommonName(username, client, configuration), classesList, attributesMap);
                 ableToSend = true;
             }
         } catch (Throwable t) {
@@ -422,7 +447,7 @@ public class LdapIntegration {
         boolean ableToSend = false;
         LdapClient client = configuration.getClient();
         try {
-            client.deleteContext(getObjectCommonName(username, configuration));
+            client.deleteContext(getObjectCommonName(username, client, configuration));
             ableToSend = true;
         } catch (Throwable t) {
             t.printStackTrace();
@@ -447,8 +472,8 @@ public class LdapIntegration {
                     String usernameToSearch = user.getUsername();
 
                     QueryReply query =
-                            client.query("(|(cn=" + usernameToSearch + ")(ULFenixUser=" + usernameToSearch + "))",
-                                    new String[] { UL_FENIXUSER });
+                            client.query("(|(" + COMMON_NAME + "=" + usernameToSearch + ")(" + UL_FENIXUSER + "="
+                                    + usernameToSearch + "))", new String[] { UL_FENIXUSER });
                     if (query.getNumberOfResults() == 1) {
                         isAvailable = true;
                     }
@@ -481,8 +506,8 @@ public class LdapIntegration {
                 AttributesMap attributesMap = collectAttributeMap(student);
                 List<String> objectClasses = new ArrayList<String>();
                 objectClasses.addAll(Arrays.asList(OBJECT_CLASSES_TO_ADD));
-                objectClasses.add("ULAuxFac" + getSchoolCode());
-                client.replaceInExistingContext(getPersonCommonName(person, configuration), objectClasses, attributesMap);
+                objectClasses.add(STUDENT_CLASS_PREFIX + getSchoolCode());
+                client.replaceInExistingContext(getPersonCommonName(person, client, configuration), objectClasses, attributesMap);
                 ableToUpdateStudent = true;
             } finally {
                 client.logout();
@@ -507,7 +532,8 @@ public class LdapIntegration {
                 List<String> objectClasses = Arrays.asList(OBJECT_CLASSES_TO_ADD);
 
                 try {
-                    client.writeNewContext(getPersonCommonName(person, configuration), objectClasses, collectAttributeMap(person));
+                    client.writeNewContext(getPersonCommonName(person, client, configuration), objectClasses,
+                            collectAttributeMap(person));
                     ableToSend = true;
                 } catch (Throwable t) {
                     t.printStackTrace();
@@ -532,12 +558,19 @@ public class LdapIntegration {
             boolean login = client.login();
             try {
                 if (login) {
+                    String personCommonName = getPersonCommonName(person, client, configuration);
 
                     List<String> objectClasses = Arrays.asList(OBJECT_CLASSES_TO_ADD);
+                    QueryReply query =
+                            client.query("(&(" + COMMON_NAME + "=" + personCommonName + ")(objectClass=" + STUDENT_CLASS_PREFIX
+                                    + getSchoolCode() + " ))", new String[] { COMMON_NAME });
 
+                    if (query.getNumberOfResults() == 1) {
+                        // The person is a student so we have to add this class as well
+                        objectClasses.add(STUDENT_CLASS_PREFIX + getSchoolCode());
+                    }
                     try {
-                        client.replaceInExistingContext(getPersonCommonName(person, configuration), objectClasses,
-                                collectAttributeMap(person));
+                        client.replaceInExistingContext(personCommonName, objectClasses, collectAttributeMap(person));
                         ableToSend = true;
                     } catch (Throwable t) {
                         t.printStackTrace();
@@ -564,7 +597,7 @@ public class LdapIntegration {
             if (client.login()) {
                 try {
                     QueryReply query =
-                            client.query("cn=" + person.getUsername(), new String[] {
+                            client.query(COMMON_NAME + "=" + person.getUsername(), new String[] {
                                     UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + schoolCode, UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE,
                                     INTERNET_EMAIL_ADDRESS, UL_BIRTH_DATE_ATTRIBUTE, UL_BI_ATTRIBUTE, UL_SEX_ATTRIBUTE,
                                     GIVEN_NAME_ATTRIBUTE, LAST_NAME_ATTRIBUTE });

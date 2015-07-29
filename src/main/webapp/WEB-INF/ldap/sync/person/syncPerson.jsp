@@ -55,7 +55,11 @@ ${portal.toolkit()}
 		class="glyphicon glyphicon-cog" aria-hidden="true"></span>&nbsp;<a
 		class="" href='javascript:receiveFromLdap();'><spring:message
 			code="label.event.receiveFromLdap" /></a>
-	<c:if test="${not empty studentSyncInformation}">
+			| &nbsp; &nbsp; <span
+		class="glyphicon glyphicon-cog" aria-hidden="true"></span>&nbsp;<a
+		class="" href='javascript:removeFromLdap();'><spring:message
+			code="label.event.removeFromLdap" /></a>
+				<c:if test="${not empty studentSyncInformation}">
 		| &nbsp; &nbsp; <span
 		class="glyphicon glyphicon-cog" aria-hidden="true"></span>&nbsp;<a
 		class="" href='javascript:sendStudenToLdap();'><spring:message
@@ -66,6 +70,10 @@ ${portal.toolkit()}
 <script type="text/javascript">
 	function sendToLdap() {
 		$('#sendToLdap').modal('toggle')
+	}
+	
+	function removeFromLdap() {
+		$('#removeFromLdap').modal('toggle')
 	}
 	
 	function receiveFromLdap() {
@@ -118,6 +126,24 @@ ${portal.toolkit()}
   </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
 
+<div class="modal fade" id="removeFromLdap">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title"><spring:message code="label.confirmation"/></h4>
+      </div>
+      <div class="modal-body">
+        <p><spring:message code = "label.confirmation.removeFromLdap"/></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal"><spring:message code = "label.close"/></button>
+        <a id="deleteLink" class="btn btn-danger" href='javascript:$("removeFromLdap").submit()'> <spring:message code = "label.delete"/></a>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
 <div class="modal fade" id="receiveFromLdap">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -145,6 +171,10 @@ ${portal.toolkit()}
 	action="${pageContext.request.contextPath}/ldap/sync/person/receivefromldap/${person.externalId}"
 	method="POST"></form>
 
+<form id="removeFromLdap"
+	action="${pageContext.request.contextPath}/ldap/sync/person/removeFromLdap/${person.externalId}"
+	method="POST"></form>
+	
 <c:if test="${not empty studentSyncInformation}">
 <form id="sendStudentToLdapForm"
 	action="${pageContext.request.contextPath}/ldap/sync/person/sendstudenttoldap/${person.externalId}"

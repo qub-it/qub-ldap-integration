@@ -93,4 +93,10 @@ public class PersonController extends LdapBaseController {
         return "redirect:/ldap/sync/person/syncPerson" + "/" + person.getExternalId();
     }
 
+    @RequestMapping(value = "/removeFromLDAP/{oid}", method = RequestMethod.POST)
+    public String removeFromLdap(@PathVariable("oid") Person person, Model model) {
+        setPerson(person, model);
+        LdapIntegration.deleteUser(person);
+        return "redirect:/ldap/sync/person/syncPerson" + "/" + person.getExternalId();
+    }
 }
