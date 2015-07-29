@@ -154,10 +154,6 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
                     }
                     if (LdapIntegration.isUpdateNeeded(person, configuration)) {
                         LdapIntegration.updatePersonInLdap(person, configuration);
-                        Student student = person.getStudent();
-                        if (student != null) {
-                            LdapIntegration.updateStudentStatus(student, configuration);
-                        }
                     }
                 } catch (Throwable t) {
                     LOG.error("Problem sending person : " + person.getName() + "(user: " + person.getUsername() + ") to ldap", t);
