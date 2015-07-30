@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 
 import org.fenixedu.academic.domain.Person;
 import org.fenixedu.academic.domain.exceptions.DomainException;
-import org.fenixedu.academic.domain.student.Student;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -95,12 +94,12 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
         return new LdapClient(getUsername(), getPassword(), getUrl(), getBaseDomain());
     }
 
-    public void sendAllUsers() {
+    private void applyOperationToAllUsers(final Class<? extends BatchWorker<Person>> callableClass, int threadNumber,
+            boolean block) {
         List<Person> collect =
                 Bennu.getInstance().getPartysSet().stream().filter(p -> p instanceof Person).map(Person.class::cast)
                         .collect(Collectors.toList());
 
-        int threadNumber = 10;
         int totalSize = collect.size();
         int split = totalSize / threadNumber + (totalSize % threadNumber);
 
@@ -109,36 +108,69 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
         for (int i = 0; i < threadNumber; i++) {
             int start = i * split;
             int end = Math.min(start + split, totalSize);
-            SendPersonToLdapWorker sendPersonToLdapWorker = new SendPersonToLdapWorker(collect.subList(start, end), this);
-            Thread t = new Thread(new Runnable() {
+            BatchWorker<Person> worker = null;
+            try {
+                worker = callableClass.newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                e.printStackTrace();
+            }
+            if (worker != null) {
+                worker.configure(collect.subList(start, end), this);
+                final BatchWorker<Person> finalReference = worker;
+                Thread t = new Thread(new Runnable() {
 
-                @Override
-                public void run() {
-                    FenixFramework.getTransactionManager().withTransaction(sendPersonToLdapWorker);
-                }
-            });
-            threads.add(t);
-            t.start();
+                    @Override
+                    public void run() {
+                        FenixFramework.getTransactionManager().withTransaction(finalReference);
+                    }
+                });
+                threads.add(t);
+                t.start();
+            }
         }
 
-        for (Thread t : threads) {
-            try {
-                t.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        if (block) {
+            for (Thread t : threads) {
+                try {
+                    t.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
 
-    private static class SendPersonToLdapWorker implements CallableWithoutException<Object> {
+    private static interface BatchWorker<T extends Object> extends CallableWithoutException<Object> {
 
+        public void configure(List<T> objects, LdapServerIntegrationConfiguration configuration);
+    }
+
+    private static class DeletePersonFromLdapWorker implements BatchWorker<Person> {
         private List<Person> people;
         private LdapServerIntegrationConfiguration configuration;
 
-        public SendPersonToLdapWorker(List<Person> people, LdapServerIntegrationConfiguration configuration) {
+        @Override
+        public Object call() {
+            long threadID = Thread.currentThread().getId();
+            int totalSize = this.people.size();
+            LOG.info("Starting thread  " + threadID + ". Deleting " + totalSize);
+            Thread.currentThread().setName(SendPersonToLdapWorker.class.getSimpleName() + "-" + threadID);
+            LdapIntegration.deleteUsers(people);
+            return null;
+        }
+
+        @Override
+        public void configure(List<Person> people, LdapServerIntegrationConfiguration configuration) {
             this.people = people;
             this.configuration = configuration;
         }
+
+    }
+
+    private static class SendPersonToLdapWorker implements BatchWorker<Person> {
+
+        private List<Person> people;
+        private LdapServerIntegrationConfiguration configuration;
 
         @Override
         public Object call() {
@@ -162,10 +194,20 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
             LOG.info("Finished thread " + threadID);
             return null;
         }
+
+        @Override
+        public void configure(List<Person> people, LdapServerIntegrationConfiguration configuration) {
+            this.people = people;
+            this.configuration = configuration;
+        }
+    }
+
+    public void sendAllUsers() {
+        applyOperationToAllUsers(SendPersonToLdapWorker.class, 10, false);
     }
 
     public void deleteAllUsers() {
-        LdapIntegration.deleteUsers(Bennu.getInstance().getPartysSet().stream().filter(party -> party.isPerson())
-                .map(Person.class::cast).collect(Collectors.toList()));
+        applyOperationToAllUsers(DeletePersonFromLdapWorker.class, 10, false);
     }
+
 }

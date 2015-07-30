@@ -231,8 +231,6 @@ public class LdapIntegration {
             attributesMap.add(UL_ROLE_ATTRIBUTE, "EMPLOYEE");
         }
 
-        attributesMap.add(UL_FENIXUSER, person.getUsername());
-
         CgdCard cgdCard = CgdCard.findByPerson(person);
         if (cgdCard != null) {
             attributesMap.add(UL_MIFARE_ATTRIBUTE + getSchoolCode(), cgdCard.getMifareCode());
@@ -419,7 +417,7 @@ public class LdapIntegration {
                         UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + getSchoolCode(),
                         UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_TEACHER_ACTIVE_ATTRIBUTE + getSchoolCode(),
                         UL_EMPLOYEE_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_ALUMNI_ATTRIBUTE + getSchoolCode(),
-                        UL_MIFARE_ATTRIBUTE + getSchoolCode(), UL_FENIXUSER };
+                        UL_MIFARE_ATTRIBUTE + getSchoolCode() };
 
         return retrieveSyncInfo(collectAttributeMap(person), fields, person, defaultConfiguration);
     }
@@ -595,8 +593,13 @@ public class LdapIntegration {
                     objectClasses.add(STUDENT_CLASS_PREFIX + getSchoolCode());
                 }
                 try {
-                    client.writeNewContext(getPersonCommonName(person, client, configuration), objectClasses,
-                            collectAttributeMap(person));
+                    AttributesMap collectAttributeMap = collectAttributeMap(person);
+                    // Only when creating the person we want to add this field
+                    // afterwards we want this field to stay put. 
+                    //
+                    // 30 July 2015 - Paulo Abrantes
+                    collectAttributeMap.add(UL_FENIXUSER, person.getUsername());
+                    client.writeNewContext(getPersonCommonName(person, client, configuration), objectClasses, collectAttributeMap);
                     ableToSend = true;
                 } catch (Throwable t) {
                     t.printStackTrace();
