@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 import org.fenixedu.academic.domain.Person;
 import org.fenixedu.academic.domain.exceptions.DomainException;
 import org.fenixedu.bennu.core.domain.Bennu;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,8 +153,8 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
             long threadID = Thread.currentThread().getId();
             int totalSize = this.people.size();
             LOG.info("Starting thread  " + threadID + ". Deleting " + totalSize);
-            Thread.currentThread().setName(SendPersonToLdapWorker.class.getSimpleName() + "-" + threadID);
-            LdapIntegration.deleteUsers(people);
+            Thread.currentThread().setName(DeletePersonFromLdapWorker.class.getSimpleName() + "-" + threadID);
+            LdapIntegration.deleteUsers(people, configuration);
             return null;
         }
 
@@ -178,17 +177,19 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
             int totalSize = this.people.size();
             LOG.info("Starting thread  " + threadID + ". Processing " + totalSize);
             Thread.currentThread().setName(SendPersonToLdapWorker.class.getSimpleName() + "-" + threadID);
-            int i = 0;
-            for (Person person : this.people) {
-                try {
-                    if (++i % 100 == 0) {
-                        LOG.info(new DateTime().toString("HH:mm:ss") + ": " + i + " / " + totalSize + " done");
-                    }
-                    if (LdapIntegration.isUpdateNeeded(person, configuration)) {
-                        LdapIntegration.updatePersonInLdap(person, configuration);
-                    }
-                } catch (Throwable t) {
-                    LOG.error("Problem sending person : " + person.getName() + "(user: " + person.getUsername() + ") to ldap", t);
+
+            if (totalSize < 1000) {
+                LOG.info("Less than 1000 elements sending a single batch");
+                LdapIntegration.createOrUpdatePeopleInLdap(this.people, this.configuration);
+            } else {
+                int pageSize = 1000;
+                int pages = (totalSize / pageSize) + (totalSize % 1000 > 0 ? 1 : 0);
+                LOG.info("More than 1000 elements, number of pages: " + pages);
+                for (int i = 0; i < pages; i++) {
+                    int min = pageSize * i;
+                    int max = Math.min(min + pageSize, totalSize);
+                    LOG.info("Sending page : " + i + " out of " + pages);
+                    LdapIntegration.createOrUpdatePeopleInLdap(this.people.subList(min, max), this.configuration);
                 }
             }
             LOG.info("Finished thread " + threadID);
