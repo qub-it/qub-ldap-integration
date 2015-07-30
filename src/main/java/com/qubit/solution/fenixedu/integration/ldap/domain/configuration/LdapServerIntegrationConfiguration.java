@@ -155,6 +155,7 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
             LOG.info("Starting thread  " + threadID + ". Deleting " + totalSize);
             Thread.currentThread().setName(DeletePersonFromLdapWorker.class.getSimpleName() + "-" + threadID);
             LdapIntegration.deleteUsers(people, configuration);
+            LOG.info("Stopping thread  " + threadID);
             return null;
         }
 
