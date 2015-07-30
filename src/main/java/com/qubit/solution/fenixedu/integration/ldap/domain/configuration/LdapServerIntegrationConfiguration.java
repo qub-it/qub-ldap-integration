@@ -145,7 +145,7 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
         public void configure(List<T> objects, LdapServerIntegrationConfiguration configuration);
     }
 
-    private static class DeletePersonFromLdapWorker implements BatchWorker<Person> {
+    public static class DeletePersonFromLdapWorker implements BatchWorker<Person> {
         private List<Person> people;
         private LdapServerIntegrationConfiguration configuration;
 
@@ -167,7 +167,7 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
 
     }
 
-    private static class SendPersonToLdapWorker implements BatchWorker<Person> {
+    public static class SendPersonToLdapWorker implements BatchWorker<Person> {
 
         private List<Person> people;
         private LdapServerIntegrationConfiguration configuration;
