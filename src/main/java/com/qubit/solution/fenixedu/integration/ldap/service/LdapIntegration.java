@@ -166,12 +166,14 @@ public class LdapIntegration {
 
     }
 
+    // Collects data for ULAUXUser-StudentSchema
     private static AttributesMap collectAttributeMap(Student student) {
         AttributesMap attributesMap = new AttributesMap();
         collecStudentAttributes(student, attributesMap);
         return attributesMap;
     }
 
+    // COLLECTS DATA FOR ULAUXUSER
     private static AttributesMap collectAttributeMap(Person person) {
         String schooldCode = getSchoolCode();
 
@@ -337,14 +339,18 @@ public class LdapIntegration {
             if (client.login()) {
                 ableToSend = true;
                 for (Person person : people) {
-                    String personCommonName = getPersonCommonName(person, client, configuration);
-                    if (!personCommonName.equals(configuration.getUsername())) {
-                        client.deleteContext(personCommonName);
+                    try {
+                        String personCommonName = getPersonCommonName(person, client, configuration);
+                        if (!personCommonName.equals(configuration.getUsername())) {
+                            client.deleteContext(personCommonName);
+                        }
+                    } catch (Throwable t) {
+                        t.printStackTrace();
                     }
                 }
             }
-        } catch (Throwable t) {
-            t.printStackTrace();
+        } finally {
+            client.logout();
         }
         return ableToSend;
     }
