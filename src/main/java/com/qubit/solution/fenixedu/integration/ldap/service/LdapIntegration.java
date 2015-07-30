@@ -96,24 +96,67 @@ public class LdapIntegration {
     private static final String FULL_NAME_ATTRIBUTE = "FullName";
     private static final String UL_MIFARE_ATTRIBUTE = "ULMifare";
     private static final String UL_ALUMNI_ATTRIBUTE = "ULAlumni";
-
-    private static final String COMMON_NAME = "cn";
-    // From ULFenixUser class
-    private static final String UL_FENIXUSER = "ULFenixUser";
-
     private static final String USER_PASSWORD = "userPassword";
-
     private static final String UL_STUDENT_CODE = "ULStudentCode";
     private static final String UL_COURSES = "ULCourses";
+    private static final String COMMON_NAME = "cn";
 
+    // Attribute from ULFenixUser class (yes same name..I know) 
+    // This must old the original username of the user in Fenix
+    // 
+    // 30 July 2015 - Paulo ABrantes
+    private static final String UL_FENIXUSER = "ULFenixUser";
+
+    // Object classes from Ldap
     private static String[] OBJECT_CLASSES_TO_ADD = { "person", "ULAuxUser", "ULFenixUser" };
     private static String[] OBJECT_CLASSES_TO_ADD_TEMP_USER = { "person", "ULFenixUser" };
     private static final String STUDENT_CLASS_PREFIX = "ULAuxFac";
+
+    // All the fields in this variable are from ULAuxUser LDAP class.
+    //
+    // This fields are used to show in the synchronized interface and also used by isUpdatedNeeded(Person) 
+    //
+    // To check if a given person is synchronized this fields are requested to ldap and we also call
+    // collectAttributeMap with the given person. Then for each field here we iterate and check if both
+    // values are equal or not. If all is equal then things are up to date, otherwise they are not.
+    //
+    // 30 July 2015 - Paulo Abrantes
+    private static final String[] PERSON_FIELDS_TO_SYNC = new String[] { FULL_NAME_ATTRIBUTE, GIVEN_NAME_ATTRIBUTE,
+            LAST_NAME_ATTRIBUTE, UL_BI_ATTRIBUTE, CO_ATTRIBUTE, UL_SEX_ATTRIBUTE, UL_BIRTH_DATE_ATTRIBUTE,
+            UL_POSTAL_ADDR_ATTRIBUTE, UL_POSTAL_CODE_ATTRIBUTE, UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE,
+            UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + getSchoolCode(), UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(),
+            UL_TEACHER_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_EMPLOYEE_ACTIVE_ATTRIBUTE + getSchoolCode(),
+            UL_ALUMNI_ATTRIBUTE + getSchoolCode(), UL_MIFARE_ATTRIBUTE + getSchoolCode() };
+
+    // All the fields in this variable are from ULAuxFac<SchoolCode> ldap class.
+    //
+    // Same thing as the PERSON_FIELDS_INTERFACE but for the Student class
+    //
+    // 30 July 2015 - Paulo Abrantes
+    private static final String[] STUDENT_FIELDS_TO_SYNC = new String[] { UL_STUDENT_CODE + getSchoolCode(),
+            UL_COURSES + getSchoolCode() };
 
     private static String getSchoolCode() {
         return Bennu.getInstance().getInstitutionUnit().getAcronym();
     }
 
+    // When we send a person to LDAP its CN is the person's username, which on the first creation
+    // is equal to the attribute in ULFenixUser. IDM then proceeds to do a match and WILL REWRITE
+    // CN to campus username.
+    //
+    // This means that if I create a user for me in the system called bennu123, when it reaches 
+    // LDAP it will be CN=bennu123 ULFenixUser=bennu123. Since I have a campus ID, IDM will do a
+    // match and rewrite the CN. At this moment the register in LDAP will be CN=paulo.abrantes
+    // ULFenixUser=bennu123.
+    //
+    // If by that time no login has been done in Fenix my username in Fenix will still be bennu123
+    // but my CN will no longer be bennu123 but paulo.abrantes. This method handles those situations
+    // returning always the correct CN for any given username.
+    //
+    // Side note: When a user log's into Fenix the system detects the CN has change and changes
+    // the username accordingly.
+    //
+    // 30 July 2015 - Paulo Abrantes
     private static String getCorrectCN(String username, LdapClient client) {
         String ldapUsername = username;
         String[] replyAttributes = new String[] { COMMON_NAME };
@@ -126,6 +169,9 @@ public class LdapIntegration {
         return ldapUsername;
     }
 
+    // When refering to an object in ldap we can't only give his CN but also the domain. Both the 
+    // methods below 
+    //
     private static String getObjectCommonName(String username, LdapClient client, LdapServerIntegrationConfiguration configuration) {
         return COMMON_NAME + "=" + getCorrectCN(username, client) + "," + configuration.getBaseDomain();
     }
@@ -134,26 +180,10 @@ public class LdapIntegration {
         return getObjectCommonName(person.getUsername(), client, configuration);
     }
 
-    public static String generateLdapPassword(String password, String salt) {
-        byte[] hashedString = null;
-        try {
-            hashedString = java.security.MessageDigest.getInstance("SHA-1").digest((password + salt).getBytes());
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Problems accessing SHA-1 algorithm", e);
-        }
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try {
-            outputStream.write(hashedString);
-            outputStream.write(salt.getBytes());
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-        byte finalArray[] = outputStream.toByteArray();
-        return "{SSHA}" + BaseEncoding.base64().encode(finalArray).trim();
-    }
-
+    // This is an extraction of collectAttributeMap(Student student) because collectAttributeMap(Person person)
+    // also calls this if a person has a student so every field is filled singleshot.
+    //
+    // 30 July 2015 - Paulo Abrantes
     private static void collecStudentAttributes(Student student, AttributesMap attributesMap) {
         attributesMap.add(UL_STUDENT_CODE + getSchoolCode(), String.valueOf(student.getNumber()));
         if (isStudent(student.getPerson())) {
@@ -166,14 +196,14 @@ public class LdapIntegration {
 
     }
 
-    // Collects data for ULAUXUser-StudentSchema
+    // Collects data from a student, these are fields from ULAUXFac<School> ldap class
     private static AttributesMap collectAttributeMap(Student student) {
         AttributesMap attributesMap = new AttributesMap();
         collecStudentAttributes(student, attributesMap);
         return attributesMap;
     }
 
-    // COLLECTS DATA FOR ULAUXUSER
+    // Collects data from a person, these are fields from ULAuxUser ldap class 
     private static AttributesMap collectAttributeMap(Person person) {
         String schooldCode = getSchoolCode();
 
@@ -355,12 +385,6 @@ public class LdapIntegration {
         return ableToSend;
     }
 
-    public static boolean createUser(String username, String password, String salt) {
-//        String salt = RandomStringUtils.randomAscii(16);
-        String generateLdapPassword = generateLdapPassword(password, salt);
-        return createUser(username, generateLdapPassword, getDefaultConfiguration());
-    }
-
     // Map with each property and a string array
     // position 0 local, position 1 ldap info 
     //
@@ -409,11 +433,11 @@ public class LdapIntegration {
         return map;
     }
 
-    public static Map<String, String[]> retrieveSyncInformation(Student student, LdapClient ldapClient,
+    private static Map<String, String[]> retrieveSyncInformation(Student student, LdapClient ldapClient,
             LdapServerIntegrationConfiguration defaultConfiguration) {
 
-        return retrieveSyncInfo(collectAttributeMap(student), new String[] { UL_STUDENT_CODE + getSchoolCode(),
-                UL_COURSES + getSchoolCode() }, student.getPerson(), ldapClient, defaultConfiguration);
+        return retrieveSyncInfo(collectAttributeMap(student), STUDENT_FIELDS_TO_SYNC, student.getPerson(), ldapClient,
+                defaultConfiguration);
     }
 
     public static Map<String, String[]> retrieveSyncInformation(Person person) {
@@ -436,15 +460,7 @@ public class LdapIntegration {
 
     private static Map<String, String[]> retrieveSyncInformation(Person person, LdapClient ldapClient,
             LdapServerIntegrationConfiguration defaultConfiguration) {
-        String[] fields =
-                new String[] { FULL_NAME_ATTRIBUTE, GIVEN_NAME_ATTRIBUTE, LAST_NAME_ATTRIBUTE, UL_BI_ATTRIBUTE, CO_ATTRIBUTE,
-                        UL_SEX_ATTRIBUTE, UL_BIRTH_DATE_ATTRIBUTE, UL_POSTAL_ADDR_ATTRIBUTE, UL_POSTAL_CODE_ATTRIBUTE,
-                        UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + getSchoolCode(),
-                        UL_STUDENT_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_TEACHER_ACTIVE_ATTRIBUTE + getSchoolCode(),
-                        UL_EMPLOYEE_ACTIVE_ATTRIBUTE + getSchoolCode(), UL_ALUMNI_ATTRIBUTE + getSchoolCode(),
-                        UL_MIFARE_ATTRIBUTE + getSchoolCode() };
-
-        return retrieveSyncInfo(collectAttributeMap(person), fields, person, ldapClient, defaultConfiguration);
+        return retrieveSyncInfo(collectAttributeMap(person), PERSON_FIELDS_TO_SYNC, person, ldapClient, defaultConfiguration);
     }
 
     private static StringBuilder concatenateValues(List<String> list) {
@@ -458,27 +474,6 @@ public class LdapIntegration {
             }
         }
         return builder;
-    }
-
-    public static boolean createUser(String username, String password, LdapServerIntegrationConfiguration configuration) {
-        AttributesMap attributesMap = new AttributesMap();
-        attributesMap.add(LAST_NAME_ATTRIBUTE, username);
-        attributesMap.add(UL_FENIXUSER, username);
-        attributesMap.add(USER_PASSWORD, password);
-
-        boolean ableToSend = false;
-        LdapClient client = configuration.getClient();
-        try {
-            if (client.login()) {
-                @SuppressWarnings("unchecked")
-                List<String> classesList = new ArrayList<String>(Arrays.asList(OBJECT_CLASSES_TO_ADD_TEMP_USER));
-                client.writeNewContext(getObjectCommonName(username, client, configuration), classesList, attributesMap);
-                ableToSend = true;
-            }
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
-        return ableToSend;
     }
 
     public static boolean deleteUser(String username, LdapServerIntegrationConfiguration configuration) {
@@ -779,6 +774,56 @@ public class LdapIntegration {
             person.getProfile().changeName(givenNames, surnames, displayName);
         }
 
+    }
+
+    // Tools to help creating a fenix users only. This user will no be aligned by IDM. 
+    // This will be used by the candidates.
+    //
+    // 30 July 2015 - Paulo Abrantes
+    public static String generateLdapPassword(String password, String salt) {
+        byte[] hashedString = null;
+        try {
+            hashedString = java.security.MessageDigest.getInstance("SHA-1").digest((password + salt).getBytes());
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Problems accessing SHA-1 algorithm", e);
+        }
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            outputStream.write(hashedString);
+            outputStream.write(salt.getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        byte finalArray[] = outputStream.toByteArray();
+        return "{SSHA}" + BaseEncoding.base64().encode(finalArray).trim();
+    }
+
+    public static boolean createUser(String username, String password, String salt) {
+        return createUser(username, password, salt, getDefaultConfiguration());
+    }
+
+    public static boolean createUser(String username, String password, String salt,
+            LdapServerIntegrationConfiguration configuration) {
+        String generateLdapPassword = generateLdapPassword(password, salt);
+        AttributesMap attributesMap = new AttributesMap();
+        attributesMap.add(LAST_NAME_ATTRIBUTE, username);
+        attributesMap.add(UL_FENIXUSER, username);
+        attributesMap.add(USER_PASSWORD, generateLdapPassword);
+
+        boolean ableToSend = false;
+        LdapClient client = configuration.getClient();
+        try {
+            if (client.login()) {
+                @SuppressWarnings("unchecked")
+                List<String> classesList = new ArrayList<String>(Arrays.asList(OBJECT_CLASSES_TO_ADD_TEMP_USER));
+                client.writeNewContext(getObjectCommonName(username, client, configuration), classesList, attributesMap);
+                ableToSend = true;
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+        return ableToSend;
     }
 
 }
