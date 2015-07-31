@@ -648,7 +648,7 @@ public class LdapIntegration {
                             t.printStackTrace();
                         }
                     } else if (isUpdateNeeded(person, client, configuration)) {
-                        List<String> objectClasses = Arrays.asList(OBJECT_CLASSES_TO_ADD);
+                        List<String> objectClasses = new ArrayList<String>(Arrays.asList(OBJECT_CLASSES_TO_ADD));
                         QueryReply query =
                                 client.query("(&(" + COMMON_NAME + "=" + getCorrectCN(person.getUsername(), client)
                                         + ")(objectClass=" + STUDENT_CLASS_PREFIX + getSchoolCode() + "))",
