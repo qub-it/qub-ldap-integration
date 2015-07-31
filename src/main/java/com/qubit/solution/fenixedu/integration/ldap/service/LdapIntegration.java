@@ -596,7 +596,7 @@ public class LdapIntegration {
                 List<String> objectClasses = new ArrayList<String>();
                 QueryReply query =
                         client.query("(&(" + COMMON_NAME + "=" + getCorrectCN(person.getUsername(), client) + ")(objectClass="
-                                + STUDENT_CLASS_PREFIX + getSchoolCode() + " ))", new String[] { COMMON_NAME });
+                                + STUDENT_CLASS_PREFIX + getSchoolCode() + "))", new String[] { COMMON_NAME });
                 if (query.getNumberOfResults() == 1) {
                     client.replaceInExistingContext(getPersonCommonName(person, client, configuration), objectClasses,
                             attributesMap);
