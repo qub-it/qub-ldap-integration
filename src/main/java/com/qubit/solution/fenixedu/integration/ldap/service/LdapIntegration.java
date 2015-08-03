@@ -290,8 +290,8 @@ public class LdapIntegration {
                     registration -> !registration.getEnrolments(currentExecutionYear).isEmpty()
                             || !registration.getEnrolments(previousExecutionYear).isEmpty();
             hasActiveRegistrationsWithEnrolments =
-                    !student.getActiveRegistrations().stream().filter(registrationHasEnrolmentsInLast2Years).collect(Collectors.toList())
-                            .isEmpty();
+                    !student.getActiveRegistrations().stream().filter(registrationHasEnrolmentsInLast2Years)
+                            .collect(Collectors.toList()).isEmpty();
         }
         //
         // Detect if it's 1st year, 1st time
@@ -657,6 +657,13 @@ public class LdapIntegration {
 
                         if (query.getNumberOfResults() == 1) {
                             // The person is a student so we have to add this class as well
+                            objectClasses.add(STUDENT_CLASS_PREFIX + getSchoolCode());
+                        } else if (person.getStudent() != null) {
+                            // In the creation we are considering that a person with a student in fenix will also have the student class in LDAP.
+                            // This must also be considered here since further logic (e.g in collecStudentAttributes)
+                            // Will add student attributes to the LDAP message based on this condition 
+                            // PS: This condition could be tested before the ldap query improving performance, but let's keep it here temporarly to avoid risk
+                            // Nuno Pinheiro 03/08/2015
                             objectClasses.add(STUDENT_CLASS_PREFIX + getSchoolCode());
                         }
                         try {
