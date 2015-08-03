@@ -749,7 +749,8 @@ public class LdapIntegration {
                 format = "yyyyMMddHHmmss.SSS'Z'";
             }
             LocalDate parseLocalDate = new DateTimeFormatterFactory(format).createDateTimeFormatter().parseLocalDate(birthDate);
-            if (!parseLocalDate.isEqual(person.getDateOfBirthYearMonthDay())) {
+            YearMonthDay dateOfBirthYearMonthDay = person.getDateOfBirthYearMonthDay();
+            if (dateOfBirthYearMonthDay == null || !parseLocalDate.isEqual(dateOfBirthYearMonthDay)) {
                 YearMonthDay yearMonthDay =
                         new YearMonthDay(parseLocalDate.getYear(), parseLocalDate.getMonthOfYear(),
                                 parseLocalDate.getDayOfMonth());
