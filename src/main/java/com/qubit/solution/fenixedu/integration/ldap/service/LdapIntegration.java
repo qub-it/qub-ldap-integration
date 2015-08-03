@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
@@ -285,11 +286,11 @@ public class LdapIntegration {
         ExecutionYear previousExecutionYear = currentExecutionYear.getPreviousExecutionYear();
 
         if (student != null) {
+            Predicate<? super Registration> registrationHasEnrolmentsInLast2Years =
+                    registration -> !registration.getEnrolments(currentExecutionYear).isEmpty()
+                            || !registration.getEnrolments(previousExecutionYear).isEmpty();
             hasActiveRegistrationsWithEnrolments =
-                    !student.getActiveRegistrations()
-                            .stream()
-                            .filter(registration -> !registration.getEnrolments(currentExecutionYear).isEmpty()
-                                    || !registration.getEnrolments(previousExecutionYear).isEmpty()).collect(Collectors.toList())
+                    !student.getActiveRegistrations().stream().filter(registrationHasEnrolmentsInLast2Years).collect(Collectors.toList())
                             .isEmpty();
         }
         //
