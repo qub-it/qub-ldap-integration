@@ -108,6 +108,12 @@ public class ULisboaProfileResource extends ProfileResource {
                             client.logout();
                         }
                     }
+                    // It's the 1st time the user is doing login so we'll just
+                    // read the information from LDAP.
+                    user = User.findByUsername(ldapUsername);
+                    if (user != null) {
+                        LdapIntegration.updatePersonUsingLdap(user.getPerson());
+                    }
                 }
                 Authenticate.login(request.getSession(true), ldapUsername);
                 return view(null, Void.class, AuthenticatedUserViewer.class);
