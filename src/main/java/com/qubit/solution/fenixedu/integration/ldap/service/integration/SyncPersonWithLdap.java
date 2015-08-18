@@ -35,22 +35,43 @@ import com.qubit.solution.fenixedu.integration.ldap.service.LdapIntegration;
 
 public class SyncPersonWithLdap implements SyncPersonWithExternalServices {
 
+    private static int retriesOnFail = 3;
+
     @Override
     public boolean syncPersonToExternal(Person person) {
-        return Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
-                && LdapIntegration.updatePersonInLdap(person);
+        int counter = 0;
+        boolean ableToSend = false;
+        while (!ableToSend && counter++ < retriesOnFail) {
+            ableToSend =
+                    Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
+                            && LdapIntegration.updatePersonInLdap(person);
+        }
+        return ableToSend;
     }
 
     @Override
     public boolean syncPersonFromExternal(Person person) {
-        return Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
-                && LdapIntegration.updatePersonUsingLdap(person);
+        int counter = 0;
+        boolean ableToSend = false;
+        while (!ableToSend && counter++ < retriesOnFail) {
+            ableToSend =
+                    Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
+                            && LdapIntegration.updatePersonUsingLdap(person);
+        }
+        return ableToSend;
     }
 
     @Override
     public boolean syncStudentToExternal(Student student) {
-        return Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
-                && LdapIntegration.updatePersonInLdap(student.getPerson()) && LdapIntegration.updateStudentStatus(student);
+        int counter = 0;
+        boolean ableToSend = false;
+        while (!ableToSend && counter++ < retriesOnFail) {
+            ableToSend =
+                    Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
+                            && LdapIntegration.updatePersonInLdap(student.getPerson())
+                            && LdapIntegration.updateStudentStatus(student);
+        }
+        return ableToSend;
     }
 
 }
