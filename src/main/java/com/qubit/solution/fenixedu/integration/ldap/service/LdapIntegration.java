@@ -35,6 +35,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -237,7 +238,15 @@ public class LdapIntegration {
         }
 
         // OPTIONAL
-        attributesMap.add(UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, person.getInstitutionalEmailAddressValue());
+        Optional<? extends PartyContact> personalEmail =
+                person.getPartyContacts(EmailAddress.class).stream()
+                        .filter(emailAddress -> emailAddress.isActiveAndValid() && emailAddress.isPersonalType()).findFirst();
+        if (personalEmail.isPresent()) {
+            attributesMap.add(UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, personalEmail.get().getPresentationValue());
+        } else {
+            attributesMap.add(UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, person.getInstitutionalEmailAddressValue());
+        }
+
         Gender gender = person.getGender();
         if (gender != null) {
             attributesMap.add(UL_SEX_ATTRIBUTE, gender.toString().substring(0, 1));
