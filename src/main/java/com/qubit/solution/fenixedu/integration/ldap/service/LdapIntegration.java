@@ -290,10 +290,10 @@ public class LdapIntegration {
 
     private static boolean isStudent(Person person) {
         boolean hasActiveRegistrationsWithEnrolments = false;
+        boolean activeRegistrationCreatedInTheLastMonth = false;
         Student student = person.getStudent();
         ExecutionYear currentExecutionYear = ExecutionYear.readCurrentExecutionYear();
         ExecutionYear previousExecutionYear = currentExecutionYear.getPreviousExecutionYear();
-
         if (student != null) {
             Predicate<? super Registration> registrationHasEnrolmentsInLast2Years =
                     registration -> !registration.getEnrolments(currentExecutionYear).isEmpty()
@@ -301,6 +301,29 @@ public class LdapIntegration {
             hasActiveRegistrationsWithEnrolments =
                     !student.getActiveRegistrations().stream().filter(registrationHasEnrolmentsInLast2Years)
                             .collect(Collectors.toList()).isEmpty();
+
+            if (!hasActiveRegistrationsWithEnrolments) {
+                // There are special kinds of students, for example in protocols, where they are created in Fenix,
+                // without a candidacy and where they have no enrolments. Although we still want them to be considered 
+                // active students so the attribute ULStudentActive is sent to LDAP with TRUE so the campus account is 
+                // created.
+                //
+                // To take into account these special cases we'll check active registrations for the student and
+                // see if any of them were created in the last month, if so we'll consider it's an active student.
+                //
+                // This solution was discussed with João Rafael and Daniela Mendes from ULisboa.
+                //
+                // 21 August 2015 - Paulo Abrantes
+                YearMonthDay today = new YearMonthDay();
+                YearMonthDay lastMonth = today.minusMonths(1);
+                YearMonthDay tomorrow = today.plusDays(1);
+                activeRegistrationCreatedInTheLastMonth =
+                        !student.getActiveRegistrations()
+                                .stream()
+                                .filter(registration -> registration.getStartDate() != null
+                                        && registration.getStartDate().isAfter(lastMonth)
+                                        && registration.getStartDate().isBefore(tomorrow)).collect(Collectors.toList()).isEmpty();
+            }
         }
         //
         // Detect if it's 1st year, 1st time
@@ -329,7 +352,7 @@ public class LdapIntegration {
                                 candidacy -> candidacy.getRegistration() != null && candidacy.getRegistration().isActive()
                                         && candidacy.getExecutionYear() == currentExecutionYear);
 
-        return hasActiveRegistrationsWithEnrolments || isFirstYearFirstTime;
+        return hasActiveRegistrationsWithEnrolments || isFirstYearFirstTime || activeRegistrationCreatedInTheLastMonth;
     }
 
     private static boolean isTeacher(Person person) {
