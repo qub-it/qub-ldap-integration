@@ -535,13 +535,10 @@ public class LdapIntegration {
             if (UL_BIRTH_DATE_ATTRIBUTE.equals(entry.getKey())) {
                 value0 = value0 != null ? value0.substring(0, 9) : null;
                 value1 = value1 != null ? value1.substring(0, 9) : null;
-            } else {
-                if ((parameter[0] == null && parameter[1] != null) || (parameter[0] != null && parameter[1] == null)
-                        || (!value0.equals(value1))) {
-                    return false;
-                }
             }
-
+            if ((value0 == null && value1 != null) || (value0 != null && value1 == null) || (!value0.equals(value1))) {
+                return false;
+            }
         }
         return true;
     }
