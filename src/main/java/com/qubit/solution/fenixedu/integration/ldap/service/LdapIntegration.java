@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
@@ -45,7 +44,6 @@ import org.fenixedu.academic.domain.Country;
 import org.fenixedu.academic.domain.ExecutionSemester;
 import org.fenixedu.academic.domain.ExecutionYear;
 import org.fenixedu.academic.domain.Person;
-import org.fenixedu.academic.domain.candidacy.StudentCandidacy;
 import org.fenixedu.academic.domain.contacts.EmailAddress;
 import org.fenixedu.academic.domain.contacts.PartyContact;
 import org.fenixedu.academic.domain.contacts.PartyContactType;
@@ -239,9 +237,16 @@ public class LdapIntegration {
         }
 
         // OPTIONAL
+
+        // José Lima said during the presentation of 1st year 1st time on the 25th August 
+        // 2015 that we should send the personal email as soon as you have it, even if not
+        // validated yet.
+        //
+        // 25 August 2015 
         Optional<? extends PartyContact> personalEmail =
                 person.getPartyContacts(EmailAddress.class).stream()
-                        .filter(emailAddress -> emailAddress.isActiveAndValid() && emailAddress.isPersonalType()).findFirst();
+                        .filter(emailAddress -> Boolean.TRUE.equals(emailAddress.getActive()) && emailAddress.isPersonalType())
+                        .findFirst();
         if (personalEmail.isPresent()) {
             attributesMap.add(UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, personalEmail.get().getPresentationValue());
         } else {
@@ -705,6 +710,11 @@ public class LdapIntegration {
     private static void updatePerson(Person person, String instituionalEmail, String personalEmail, String birthDate,
             String documentID, String sex, String givenNames, String surnames) {
 
+        if (person.getDocumentIdNumber() != null && !person.getDocumentIdNumber().equals(documentID)) {
+            throw new IllegalStateException(
+                    "Seems we are trying to update a person that does not match the ID. This should not happen!");
+        }
+        
         String institutionalEmailAddressValue = person.getInstitutionalEmailAddressValue();
         if (!StringUtils.isEmpty(instituionalEmail)
                 && (institutionalEmailAddressValue == null || !institutionalEmailAddressValue.equals(instituionalEmail))) {
