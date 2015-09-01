@@ -710,10 +710,10 @@ public class LdapIntegration {
     private static void updatePerson(Person person, String instituionalEmail, String personalEmail, String birthDate,
             String documentID, String sex, String givenNames, String surnames) {
 
-        if (person.getDocumentIdNumber() != null && !person.getDocumentIdNumber().equals(documentID)) {
-            throw new IllegalStateException(
-                    "Seems we are trying to update a person that does not match the ID. This should not happen!");
-        }
+//        if (person.getDocumentIdNumber() != null && !person.getDocumentIdNumber().equals(documentID)) {
+//            throw new IllegalStateException(
+//                    "Seems we are trying to update a person that does not match the ID. This should not happen!");
+//        }
         
         String institutionalEmailAddressValue = person.getInstitutionalEmailAddressValue();
         if (!StringUtils.isEmpty(instituionalEmail)
