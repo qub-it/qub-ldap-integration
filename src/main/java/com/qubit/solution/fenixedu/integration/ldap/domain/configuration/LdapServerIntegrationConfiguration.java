@@ -37,8 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import pt.ist.fenixframework.Atomic;
+import pt.ist.fenixframework.Atomic.TxMode;
 import pt.ist.fenixframework.CallableWithoutException;
-import pt.ist.fenixframework.FenixFramework;
 
 import com.qubit.solution.fenixedu.integration.ldap.service.LdapIntegration;
 import com.qubit.terra.ldapclient.LdapClient;
@@ -120,7 +120,7 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
 
                     @Override
                     public void run() {
-                        FenixFramework.getTransactionManager().withTransaction(finalReference);
+                        execute(finalReference);
                     }
                 });
                 threads.add(t);
@@ -137,6 +137,11 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
                 }
             }
         }
+    }
+
+    @Atomic(mode = TxMode.READ)
+    private static void execute(BatchWorker<Person> batchWorker) {
+        batchWorker.call();
     }
 
     private static interface BatchWorker<T extends Object> extends CallableWithoutException<Object> {
