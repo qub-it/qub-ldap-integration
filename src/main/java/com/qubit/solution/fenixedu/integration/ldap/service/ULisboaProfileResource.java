@@ -83,7 +83,7 @@ public class ULisboaProfileResource extends ProfileResource {
             return super.login(username, password);
         } else {
             LdapClient client = defaultLdapServer.getClient();
-            String ldapUsername = username.replace("@campus.ul.pt", "");
+            String ldapUsername = username.replace("@campus.ul.pt", "").toLowerCase();
             boolean verifyCredentials = client.verifyCredentials(ldapUsername, password);
 
             if (verifyCredentials) {
