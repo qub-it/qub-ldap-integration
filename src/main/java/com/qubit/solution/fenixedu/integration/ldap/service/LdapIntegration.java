@@ -190,7 +190,8 @@ public class LdapIntegration {
         if (isStudent(student.getPerson())) {
             List<String> courses = new ArrayList<String>();
             for (Registration registration : student.getActiveRegistrations()) {
-                courses.add(registration.getDegreeCurricularPlanName() + " " + registration.getDegreeName());
+                courses.add(registration.getDegreeCurricularPlanName() + " " + registration.getDegreeType().getName() + " "
+                        + registration.getDegreeName());
             }
             attributesMap.add(UL_COURSES + getSchoolCode(), courses.toArray(new String[] {}));
         }
