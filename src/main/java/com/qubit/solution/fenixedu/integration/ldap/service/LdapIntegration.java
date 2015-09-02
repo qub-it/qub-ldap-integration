@@ -244,9 +244,10 @@ public class LdapIntegration {
         //
         // 25 August 2015 
         Optional<? extends PartyContact> personalEmail =
-                person.getPartyContacts(EmailAddress.class).stream()
-                        .filter(emailAddress -> Boolean.TRUE.equals(emailAddress.getActive()) && emailAddress.isPersonalType())
-                        .findFirst();
+                person.getPartyContactsSet()
+                        .stream()
+                        .filter(partyContact -> partyContact instanceof EmailAddress
+                                && Boolean.TRUE.equals(partyContact.getActive()) && partyContact.isPersonalType()).findFirst();
         if (personalEmail.isPresent()) {
             attributesMap.add(UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, personalEmail.get().getPresentationValue());
         } else {
@@ -714,7 +715,7 @@ public class LdapIntegration {
 //            throw new IllegalStateException(
 //                    "Seems we are trying to update a person that does not match the ID. This should not happen!");
 //        }
-        
+
         String institutionalEmailAddressValue = person.getInstitutionalEmailAddressValue();
         if (!StringUtils.isEmpty(instituionalEmail)
                 && (institutionalEmailAddressValue == null || !institutionalEmailAddressValue.equals(instituionalEmail))) {
