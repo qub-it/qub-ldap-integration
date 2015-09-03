@@ -33,6 +33,10 @@ import java.util.stream.Collectors;
 import org.fenixedu.academic.domain.Person;
 import org.fenixedu.academic.domain.exceptions.DomainException;
 import org.fenixedu.bennu.core.domain.Bennu;
+import org.fenixedu.bennu.core.domain.User;
+import org.fenixedu.bennu.core.groups.DynamicGroup;
+import org.fenixedu.bennu.core.util.CoreConfiguration;
+import org.fenixedu.ulisboa.specifications.ULisboaConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,9 +99,17 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
 
     private void applyOperationToAllUsers(final Class<? extends BatchWorker<Person>> callableClass, int threadNumber,
             boolean block) {
-        List<Person> collect =
-                Bennu.getInstance().getPartysSet().stream().filter(p -> p instanceof Person).map(Person.class::cast)
-                        .collect(Collectors.toList());
+        List<Person> collect = null;
+        if (CoreConfiguration.getConfiguration().developmentMode() || ULisboaConfiguration.getConfiguration().isQualityMode()) {
+            collect = new ArrayList<Person>();
+            for (User user : DynamicGroup.get("employees").getMembers()) {
+                collect.add(user.getPerson());
+            }
+        } else {
+            collect =
+                    Bennu.getInstance().getPartysSet().stream().filter(p -> p instanceof Person).map(Person.class::cast)
+                            .collect(Collectors.toList());
+        }
 
         int totalSize = collect.size();
         int split = totalSize / threadNumber + (totalSize % threadNumber);
