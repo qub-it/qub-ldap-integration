@@ -100,16 +100,9 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
     private void applyOperationToAllUsers(final Class<? extends BatchWorker<Person>> callableClass, int threadNumber,
             boolean block) {
         List<Person> collect = null;
-        if (CoreConfiguration.getConfiguration().developmentMode() || ULisboaConfiguration.getConfiguration().isQualityMode()) {
-            collect = new ArrayList<Person>();
-            for (User user : DynamicGroup.get("employees").getMembers()) {
-                collect.add(user.getPerson());
-            }
-        } else {
-            collect =
-                    Bennu.getInstance().getPartysSet().stream().filter(p -> p instanceof Person).map(Person.class::cast)
-                            .collect(Collectors.toList());
-        }
+        collect =
+                Bennu.getInstance().getPartysSet().stream().filter(p -> p instanceof Person).map(Person.class::cast)
+                        .collect(Collectors.toList());
 
         int totalSize = collect.size();
         int split = totalSize / threadNumber + (totalSize % threadNumber);
