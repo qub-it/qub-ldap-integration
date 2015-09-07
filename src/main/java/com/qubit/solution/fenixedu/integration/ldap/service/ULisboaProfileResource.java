@@ -26,8 +26,6 @@
  */
 package com.qubit.solution.fenixedu.integration.ldap.service;
 
-import java.util.Collections;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.POST;
@@ -50,7 +48,6 @@ import org.fenixedu.ulisboa.specifications.ULisboaConfiguration.ConfigurationPro
 import pt.ist.fenixframework.Atomic;
 
 import com.qubit.solution.fenixedu.integration.ldap.domain.configuration.LdapServerIntegrationConfiguration;
-import com.qubit.terra.ldapclient.AttributesMap;
 import com.qubit.terra.ldapclient.LdapClient;
 import com.qubit.terra.ldapclient.QueryReply;
 import com.qubit.terra.ldapclient.QueryReplyElement;
@@ -83,7 +80,7 @@ public class ULisboaProfileResource extends ProfileResource {
             return super.login(username, password);
         } else {
             LdapClient client = defaultLdapServer.getClient();
-            String ldapUsername = username.replace("@campus.ul.pt", "").toLowerCase();
+            String ldapUsername = username.replace("@campus.ul.pt", "").toLowerCase().trim();
             boolean verifyCredentials = client.verifyCredentials(ldapUsername, password);
 
             if (verifyCredentials) {
