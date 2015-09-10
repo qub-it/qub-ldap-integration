@@ -605,6 +605,11 @@ public class LdapIntegration {
 
                 for (Person person : people) {
                     String personCommonName = getPersonCommonName(person, client, configuration);
+                    // This is the admin username we do not want to sync that one.
+                    // 10 September 2015 - Paulo Abrantes
+                    if (personCommonName.equals(configuration.getUsername())) {
+                        continue;
+                    }
                     if (!isPersonAvailableInLdap(person, client, configuration)) {
                         List<String> objectClasses = new ArrayList<String>(Arrays.asList(OBJECT_CLASSES_TO_ADD));
                         if (person.getStudent() != null) {
