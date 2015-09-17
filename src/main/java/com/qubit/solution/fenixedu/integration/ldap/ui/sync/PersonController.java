@@ -108,6 +108,13 @@ public class PersonController extends LdapBaseController {
         return "redirect:/ldap/sync/person/syncPerson" + "/" + person.getExternalId();
     }
 
+    @RequestMapping(value = "/resetUsername/{oid}", method = RequestMethod.POST)
+    public String resetUsername(@PathVariable("oid") Person person, Model model) {
+        setPerson(person, model);
+        LdapIntegration.resetUsername(person);
+        return "redirect:/ldap/sync/person/syncPerson" + "/" + person.getExternalId();
+    }
+
     @RequestMapping(value = "/sendstudenttoldap/{oid}", method = RequestMethod.POST)
     public String sendStudentToLdap(@PathVariable("oid") Person person, Model model) {
         setPerson(person, model);

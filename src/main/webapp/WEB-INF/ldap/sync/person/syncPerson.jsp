@@ -58,6 +58,10 @@ ${portal.toolkit()}
 		class="glyphicon glyphicon-cog" aria-hidden="true"></span>&nbsp;<a
 		class="" href='javascript:removeFromLdap();'><spring:message
 			code="label.event.removeFromLdap" /></a>
+			| &nbsp; &nbsp; <span
+		class="glyphicon glyphicon-cog" aria-hidden="true"></span>&nbsp;<a
+		class="" href='javascript:resetUsername();'><spring:message
+			code="label.event.resetUsername" /></a>
 	<c:if test="${not empty studentSyncInformation}">
 		| &nbsp; &nbsp; <span class="glyphicon glyphicon-cog"
 			aria-hidden="true"></span>&nbsp;<a class=""
@@ -77,6 +81,10 @@ ${portal.toolkit()}
 
 	function receiveFromLdap() {
 		$('#receiveFromLdap').modal('toggle')
+	}
+
+	function resetUsername() {
+		$('#resetUsername').modal('toggle')
 	}
 
 	<c:if test="${not empty studentSyncInformation}">
@@ -217,6 +225,37 @@ ${portal.toolkit()}
 </div>
 <!-- /.modal -->
 
+<div class="modal fade" id="resetUsername">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"
+					aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+				<h4 class="modal-title">
+					<spring:message code="label.confirmation" />
+				</h4>
+			</div>
+			<div class="modal-body">
+				<p>
+					<spring:message code="label.confirmation.resetUsername" />
+				</p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-default" data-dismiss="modal">
+					<spring:message code="label.close" />
+				</button>
+				<a id="deleteLink" class="btn btn-danger"
+					href='javascript:$("#resetUsernameForm").submit()'> <spring:message
+						code="label.reset" /></a>
+			</div>
+		</div>
+		<!-- /.modal-content -->
+	</div>
+	<!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
 
 <form id="sendToLdapForm"
 	action="${pageContext.request.contextPath}/ldap/sync/person/sendtoldap/${person.externalId}"
@@ -229,6 +268,11 @@ ${portal.toolkit()}
 <form id="removeFromLdapForm"
 	action="${pageContext.request.contextPath}/ldap/sync/person/removefromldap/${person.externalId}"
 	method="POST"></form>
+
+<form id="resetUsernameForm"
+	action="${pageContext.request.contextPath}/ldap/sync/person/resetUsername/${person.externalId}"
+	method="POST"></form>
+
 
 <c:if test="${not empty studentSyncInformation}">
 	<form id="sendStudentToLdapForm"
@@ -268,7 +312,7 @@ ${portal.toolkit()}
 <div class="panel panel-primary">
 	<div class="panel-heading">
 		<h3 class="panel-title">
-			<spring:message code="label.details" />
+			<spring:message code="label.details" /> (${person.username})
 		</h3>
 	</div>
 	<div class="panel-body">

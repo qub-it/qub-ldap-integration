@@ -53,6 +53,7 @@ import org.fenixedu.academic.domain.student.Registration;
 import org.fenixedu.academic.domain.student.Student;
 import org.fenixedu.academic.domain.time.calendarStructure.AcademicInterval;
 import org.fenixedu.bennu.core.domain.Bennu;
+import org.fenixedu.bennu.core.domain.UsernameHack;
 import org.fenixedu.bennu.core.groups.DynamicGroup;
 import org.fenixedu.ulisboa.specifications.domain.idcards.CgdCard;
 import org.fenixedu.ulisboa.specifications.service.StudentActive;
@@ -320,6 +321,33 @@ public class LdapIntegration {
 
     private static boolean isEmployee(Person person) {
         return DynamicGroup.get("employees").isMember(person.getUser());
+    }
+
+    public static void resetUsername(Person person) {
+        resetUsername(person, getDefaultConfiguration());
+    }
+
+    public static void resetUsername(Person person, LdapServerIntegrationConfiguration configuration) {
+        LdapClient ldapClient = configuration.getClient();
+        try {
+            if (ldapClient.login()) {
+                QueryReply query =
+                        ldapClient.query(COMMON_NAME + "=" + getCorrectCN(person.getUsername(), ldapClient),
+                                new String[] { UL_FENIXUSER });
+                if (query.getNumberOfResults() == 1) {
+                    QueryReplyElement next = query.getResults().iterator().next();
+                    String originalFenixUsername = next.getSimpleAttribute(UL_FENIXUSER);
+                    changeUsername(person.getUsername(), originalFenixUsername);
+                }
+            }
+        } finally {
+            ldapClient.logout();
+        }
+    }
+
+    @Atomic
+    private static void changeUsername(String username, String originalFenixUsername) {
+        UsernameHack.changeUsername(username, originalFenixUsername);
     }
 
     public static LdapServerIntegrationConfiguration getDefaultConfiguration() {
@@ -817,5 +845,4 @@ public class LdapIntegration {
         }
         return ableToSend;
     }
-
 }
