@@ -1,6 +1,7 @@
 package com.qubit.solution.fenixedu.integration.ldap.ui.sync;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -95,6 +96,12 @@ public class PersonController extends LdapBaseController {
         } else {
             addInfoMessage("Data is synchronized", model);
         }
+
+        Map<String, String> fieldValues = LdapIntegration.getFieldValues(person, "cn", "ULFenixUser");
+        model.addAttribute("fenixCurrentUsername", person.getUsername());
+        model.addAttribute("ldapCurrentUsername", fieldValues.get("cn"));
+        model.addAttribute("fenixOriginalUsername", fieldValues.get("ULFenixUser"));
+
         if (person.getStudent() != null) {
             model.addAttribute("studentSyncInformation", LdapIntegration.retrieveSyncInformation(person.getStudent()));
         }

@@ -312,7 +312,31 @@ ${portal.toolkit()}
 <div class="panel panel-primary">
 	<div class="panel-heading">
 		<h3 class="panel-title">
-			<spring:message code="label.details" /> (${person.username})
+			<spring:message code="label.details" /> 
+		</h3>
+	</div>
+	<div class="panel-body">
+		<table class="table responsive table-bordered table-hover">
+			<tr>
+				<th><spring:message code="label.fenix.current.username" /></th>
+				<td>${fenixCurrentUsername}</td>
+			</tr>
+			<tr>
+				<th><spring:message code="label.ldap.current.username" /></th>
+				<td>${ldapCurrentUsername}</td>
+			</tr>
+			<tr>
+				<th><spring:message code="label.fenix.original.username" /></th>
+				<td>${fenixOriginalUsername}</td>
+			</tr>
+		</table>
+	</div>
+</div>
+
+<div class="panel panel-primary">
+	<div class="panel-heading">
+		<h3 class="panel-title">
+			<spring:message code="label.details" /> ${person.username}
 		</h3>
 	</div>
 	<div class="panel-body">
@@ -333,7 +357,6 @@ ${portal.toolkit()}
 		</table>
 	</div>
 </div>
-
 
 <c:if test="${not empty studentSyncInformation}">
 	<div class="panel panel-primary">

@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -559,6 +560,35 @@ public class LdapIntegration {
         }
 
         return isAvailable;
+    }
+
+    public static Map<String, String> getFieldValues(Person person, String... fields) {
+        return getFieldValues(person, getDefaultConfiguration(), fields);
+    }
+
+    public static Map<String, String> getFieldValues(Person person, LdapServerIntegrationConfiguration defaultConfiguration,
+            String... fields) {
+        Map<String, String> result = new HashMap<String, String>();
+        LdapClient client = defaultConfiguration.getClient();
+        try {
+            if (client.login()) {
+                QueryReply query =
+                        client.query("(" + COMMON_NAME + "=" + getCorrectCN(person.getUsername(), client) + ")", fields);
+                if (query.getNumberOfResults() == 1) {
+                    QueryReplyElement next = query.getResults().iterator().next();
+                    for (String field : fields) {
+                        String simpleAttribute = next.getSimpleAttribute(field);
+                        result.put(field, simpleAttribute);
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        } finally {
+            client.logout();
+        }
+
+        return result;
     }
 
     private static boolean isPersonAvailableInLdap(Person person, LdapClient client,
