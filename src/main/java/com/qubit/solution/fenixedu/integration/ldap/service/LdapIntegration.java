@@ -266,7 +266,8 @@ public class LdapIntegration {
             attributesMap.add(CO_ATTRIBUTE, countryOfBirth.getName());
         }
         PhysicalAddress defaultPhysicalAddress = person.getDefaultPhysicalAddress();
-        if (defaultPhysicalAddress != null) {
+        if (defaultPhysicalAddress != null && !StringUtils.isEmpty(defaultPhysicalAddress.getAddress())
+                && !StringUtils.isEmpty(defaultPhysicalAddress.getPostalCode())) {
             attributesMap.add(UL_POSTAL_ADDR_ATTRIBUTE, defaultPhysicalAddress.getAddress());
             attributesMap.add(UL_POSTAL_CODE_ATTRIBUTE, defaultPhysicalAddress.getPostalCode());
         }
