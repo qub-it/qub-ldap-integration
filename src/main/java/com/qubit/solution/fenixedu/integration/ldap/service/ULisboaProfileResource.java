@@ -34,10 +34,12 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.lang.StringUtils;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.bennu.core.domain.User;
 import org.fenixedu.bennu.core.domain.UsernameHack;
 import org.fenixedu.bennu.core.domain.exceptions.AuthorizationException;
+import org.fenixedu.bennu.core.groups.Group;
 import org.fenixedu.bennu.core.json.adapters.AuthenticatedUserViewer;
 import org.fenixedu.bennu.core.rest.ProfileResource;
 import org.fenixedu.bennu.core.security.Authenticate;
@@ -45,12 +47,12 @@ import org.fenixedu.bennu.core.util.CoreConfiguration;
 import org.fenixedu.ulisboa.specifications.ULisboaConfiguration;
 import org.fenixedu.ulisboa.specifications.ULisboaConfiguration.ConfigurationProperties;
 
-import pt.ist.fenixframework.Atomic;
-
 import com.qubit.solution.fenixedu.integration.ldap.domain.configuration.LdapServerIntegrationConfiguration;
 import com.qubit.terra.ldapclient.LdapClient;
 import com.qubit.terra.ldapclient.QueryReply;
 import com.qubit.terra.ldapclient.QueryReplyElement;
+
+import pt.ist.fenixframework.Atomic;
 
 @Path("/bennu-core/profile/extension")
 public class ULisboaProfileResource extends ProfileResource {
@@ -65,6 +67,7 @@ public class ULisboaProfileResource extends ProfileResource {
     // the login URL.
     //
     // 22 June 2015 - Paulo Abrantes
+    @Override
     @POST
     @Path("loginExtension")
     @Produces(MediaType.APPLICATION_JSON)
@@ -72,8 +75,7 @@ public class ULisboaProfileResource extends ProfileResource {
         LdapServerIntegrationConfiguration defaultLdapServer = Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration();
         ConfigurationProperties configuration = ULisboaConfiguration.getConfiguration();
 
-        if (Boolean.TRUE.equals(configuration.isQualityMode()) && password != null
-                && password.equals(configuration.getMasterPassword())) {
+        if (isValidQualityAuthentication(username, password, configuration)) {
             Authenticate.login(request.getSession(true), username);
             return view(null, Void.class, AuthenticatedUserViewer.class);
         } else if (defaultLdapServer == null || Boolean.TRUE == CoreConfiguration.getConfiguration().developmentMode()) {
@@ -118,6 +120,21 @@ public class ULisboaProfileResource extends ProfileResource {
         }
 
         throw AuthorizationException.authenticationFailed();
+    }
+
+    private boolean isValidQualityAuthentication(String username, String password, ConfigurationProperties configuration) {
+        if(!Boolean.TRUE.equals(configuration.isQualityMode())){
+            return false;
+        }
+        User user = User.findByUsername(username);
+        boolean isManager = Group.parse("#managers").isMember(user);
+        
+        boolean isValidMasterPasswordLogin = !StringUtils.isEmpty(password) && password.equals(configuration.getMasterPassword());
+        
+        boolean isValidLightMasterPasswordLogin = !StringUtils.isEmpty(password) && password.equals(configuration.getLightMasterPassword()) &&
+                 !isManager;
+        
+        return isValidMasterPasswordLogin || isValidLightMasterPasswordLogin;
     }
 
     @Atomic
