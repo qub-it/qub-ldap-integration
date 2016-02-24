@@ -850,6 +850,30 @@ public class LdapIntegration {
         return "{SSHA}" + BaseEncoding.base64().encode(finalArray).trim();
     }
 
+    public static boolean changePassword(String username, String password, String salt) {
+        return changePassword(username, password, salt, getDefaultConfiguration());
+    }
+
+    public static boolean changePassword(String username, String password, String salt,
+            LdapServerIntegrationConfiguration configuration) {
+        String generateLdapPassword = generateLdapPassword(password, salt);
+        AttributesMap attributesMap = new AttributesMap();
+        attributesMap.add(USER_PASSWORD, generateLdapPassword);
+
+        boolean ableToSend = false;
+        LdapClient client = configuration.getClient();
+        try {
+            if (client.login()) {
+                client.replaceInExistingContext(getObjectCommonName(username, client, configuration), new ArrayList<String>(),
+                        attributesMap);
+                ableToSend = true;
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+        return ableToSend;
+    }
+
     public static boolean createUser(String username, String password, String salt) {
         return createUser(username, password, salt, getDefaultConfiguration());
     }
