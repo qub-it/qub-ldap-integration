@@ -296,7 +296,7 @@ public class LdapIntegration {
     }
 
     private static boolean isAlumni(Person person) {
-        return !isStudent(person) && person.getStudent() != null && !person.getStudent().getRegistrationsSet().isEmpty();
+        return !isStudent(person) && person.getStudent() != null;
     }
 
     private static boolean isStudent(Person person) {
