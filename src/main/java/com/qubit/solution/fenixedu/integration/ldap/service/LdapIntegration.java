@@ -858,6 +858,27 @@ public class LdapIntegration {
         return "{SSHA}" + BaseEncoding.base64().encode(finalArray).trim();
     }
 
+    public static boolean removePassword(String username) {
+        return removePassword(username, getDefaultConfiguration());
+    }
+
+    private static boolean removePassword(String username, LdapServerIntegrationConfiguration configuration) {
+        AttributesMap attributesMap = new AttributesMap();
+        attributesMap.add(USER_PASSWORD, (String) null);
+
+        boolean ableToSend = false;
+        LdapClient client = configuration.getClient();
+        try {
+            if (client.login()) {
+                client.removeFromExistingContext(getObjectCommonName(username, client, configuration), attributesMap);
+                ableToSend = true;
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+        return ableToSend;
+    }
+
     public static boolean changePassword(String username, String password, String salt) {
         return changePassword(username, password, salt, getDefaultConfiguration());
     }
