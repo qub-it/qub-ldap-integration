@@ -882,6 +882,25 @@ public class LdapIntegration {
         return ableToSend;
     }
 
+    public static boolean changeCN(Person person, String newUsername) {
+        return changeCN(person, newUsername, getDefaultConfiguration());
+    }
+
+    public static boolean changeCN(Person person, String newUsername, LdapServerIntegrationConfiguration configuration) {
+        boolean ableToRename = false;
+        LdapClient client = configuration.getClient();
+        try {
+            if (client.login()) {
+                ableToRename =
+                        client.renameContext(getPersonCommonName(person, client, configuration), COMMON_NAME + "=" + newUsername
+                                + "," + configuration.getBaseDomain());
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+        return ableToRename;
+    }
+
     public static boolean createUser(String username, String password, String salt) {
         return createUser(username, password, salt, getDefaultConfiguration());
     }
