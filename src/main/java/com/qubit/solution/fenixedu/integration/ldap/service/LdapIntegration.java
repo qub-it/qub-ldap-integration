@@ -870,7 +870,13 @@ public class LdapIntegration {
         LdapClient client = configuration.getClient();
         try {
             if (client.login()) {
-                client.removeFromExistingContext(getObjectCommonName(username, client, configuration), attributesMap);
+                QueryReply query =
+                        client.query(
+                                "(& (" + COMMON_NAME + "=" + getCorrectCN(username, client) + ") (" + USER_PASSWORD + "=*))",
+                                new String[] { COMMON_NAME });
+                if (query.getNumberOfResults() == 1) {
+                    client.removeFromExistingContext(getObjectCommonName(username, client, configuration), attributesMap);
+                }
                 ableToSend = true;
             }
         } catch (Throwable t) {
