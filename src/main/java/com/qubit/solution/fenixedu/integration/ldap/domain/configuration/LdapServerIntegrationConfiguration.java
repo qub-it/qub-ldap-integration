@@ -33,10 +33,6 @@ import java.util.stream.Collectors;
 import org.fenixedu.academic.domain.Person;
 import org.fenixedu.academic.domain.exceptions.DomainException;
 import org.fenixedu.bennu.core.domain.Bennu;
-import org.fenixedu.bennu.core.domain.User;
-import org.fenixedu.bennu.core.groups.DynamicGroup;
-import org.fenixedu.bennu.core.util.CoreConfiguration;
-import org.fenixedu.ulisboa.specifications.ULisboaConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +40,7 @@ import pt.ist.fenixframework.Atomic;
 import pt.ist.fenixframework.Atomic.TxMode;
 import pt.ist.fenixframework.CallableWithoutException;
 
+import com.qubit.solution.fenixedu.integration.ldap.service.AttributeResolver;
 import com.qubit.solution.fenixedu.integration.ldap.service.LdapIntegration;
 import com.qubit.terra.ldapclient.LdapClient;
 
@@ -97,13 +94,8 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
         return new LdapClient(getUsername(), getPassword(), getUrl(), getBaseDomain());
     }
 
-    private void applyOperationToAllUsers(final Class<? extends BatchWorker<Person>> callableClass, int threadNumber,
-            boolean block) {
-        List<Person> collect = null;
-        collect =
-                Bennu.getInstance().getPartysSet().stream().filter(p -> p instanceof Person).map(Person.class::cast)
-                        .collect(Collectors.toList());
-
+    public void applyOperationToAllUsers(List<Person> collect, final Class<? extends BatchWorker<Person>> callableClass,
+            int threadNumber, boolean block) {
         int totalSize = collect.size();
         int split = totalSize / threadNumber + (totalSize % threadNumber);
 
@@ -149,9 +141,44 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
         batchWorker.call();
     }
 
-    private static interface BatchWorker<T extends Object> extends CallableWithoutException<Object> {
+    public static interface BatchWorker<T extends Object> extends CallableWithoutException<Object> {
 
         public void configure(List<T> objects, LdapServerIntegrationConfiguration configuration);
+    }
+
+    public static abstract class AttributeWriter implements BatchWorker<Person> {
+
+        private List<Person> people;
+        private LdapServerIntegrationConfiguration configuration;
+
+        private String attributeName;
+        private AttributeResolver attributeResolver;
+
+        public AttributeWriter(String attributeName, AttributeResolver attributeResolver) {
+            this.attributeName = attributeName;
+            this.attributeResolver = attributeResolver;
+        }
+
+        @Override
+        public Object call() {
+            long threadID = Thread.currentThread().getId();
+            int totalSize = this.people.size();
+            LOG.info("Starting thread  " + threadID + ". Writting attribute " + attributeName + " for " + totalSize);
+            Thread.currentThread().setName(attributeName + "-" + threadID);
+            for (Person person : people) {
+                LdapIntegration.writeAtttribute(person, attributeName, attributeResolver.getAttributeValueFor(person));
+            }
+            LOG.info("Stopping thread  " + threadID);
+            return null;
+        }
+
+        @Override
+        public void configure(List<Person> people, LdapServerIntegrationConfiguration configuration) {
+            this.people = people;
+            this.configuration = configuration;
+
+        }
+
     }
 
     public static class DeletePersonFromLdapWorker implements BatchWorker<Person> {
@@ -215,11 +242,14 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
     }
 
     public void sendAllUsers() {
-        applyOperationToAllUsers(SendPersonToLdapWorker.class, 10, false);
+        applyOperationToAllUsers(
+                Bennu.getInstance().getPartysSet().stream().filter(p -> p instanceof Person).map(Person.class::cast)
+                        .collect(Collectors.toList()), SendPersonToLdapWorker.class, 10, false);
     }
 
     public void deleteAllUsers() {
-        applyOperationToAllUsers(DeletePersonFromLdapWorker.class, 10, false);
+        applyOperationToAllUsers(
+                Bennu.getInstance().getPartysSet().stream().filter(p -> p instanceof Person).map(Person.class::cast)
+                        .collect(Collectors.toList()), DeletePersonFromLdapWorker.class, 10, false);
     }
-
 }

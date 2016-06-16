@@ -62,6 +62,8 @@ import org.fenixedu.ulisboa.specifications.service.StudentActive;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonthDay;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.format.datetime.joda.DateTimeFormatterFactory;
 
 import pt.ist.fenixframework.Atomic;
@@ -77,6 +79,8 @@ import edu.emory.mathcs.backport.java.util.Arrays;
 import edu.emory.mathcs.backport.java.util.Collections;
 
 public class LdapIntegration {
+
+    private static final Logger logger = LoggerFactory.getLogger(LdapIntegration.class);
 
     //
     // Evaluate effort to make this fields dynamic using a domain entity 
@@ -618,6 +622,24 @@ public class LdapIntegration {
         return isAvailable;
     }
 
+    private static boolean isPersonAvailableWithAttribute(Person person, String attributeName, LdapClient client,
+            LdapServerIntegrationConfiguration defaultConfiguration) {
+        boolean isAvailable = false;
+        try {
+            String usernameToSearch = person.getUsername();
+
+            QueryReply query =
+                    client.query("(& (|(" + COMMON_NAME + "=" + usernameToSearch + ")(" + UL_FENIXUSER + "=" + usernameToSearch
+                            + ")) (" + attributeName + "=*))", new String[] { UL_FENIXUSER });
+            if (query.getNumberOfResults() == 1) {
+                isAvailable = true;
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+        return isAvailable;
+    }
+
     public static boolean updateStudentStatus(Student student) {
         return updateStudentStatus(student, getDefaultConfiguration());
     }
@@ -835,6 +857,34 @@ public class LdapIntegration {
 
     }
 
+    public static boolean writeAtttribute(Person person, String attributeName, String attributeValue) {
+        return writeAtttribute(person, attributeName, attributeValue, getDefaultConfiguration());
+    }
+
+    public static boolean writeAtttribute(Person person, String attributeName, String attributeValue,
+            LdapServerIntegrationConfiguration configuration) {
+
+        LdapClient client = configuration.getClient();
+        boolean attributeSent = false;
+
+        try {
+            if (client.login()) {
+                AttributesMap attributesMap = new AttributesMap();
+                attributesMap.add(attributeName, attributeValue);
+                if (isPersonAvailableWithAttribute(person, attributeName, client, configuration)) {
+                    client.replaceInExistingContext(getPersonCommonName(person, client, configuration), new ArrayList<String>(),
+                            attributesMap);
+                } else {
+                    client.addToExistingContext(getPersonCommonName(person, client, configuration), new ArrayList<String>(),
+                            attributesMap);
+                }
+            }
+        } finally {
+            client.logout();
+        }
+        return attributeSent;
+    }
+
     // Tools to help creating a fenix users only. This user will no be aligned by IDM. 
     // This will be used by the candidates.
     //
@@ -875,12 +925,16 @@ public class LdapIntegration {
                                 "(& (" + COMMON_NAME + "=" + getCorrectCN(username, client) + ") (" + USER_PASSWORD + "=*))",
                                 new String[] { COMMON_NAME });
                 if (query.getNumberOfResults() == 1) {
-                    client.removeFromExistingContext(getObjectCommonName(username, client, configuration), attributesMap);
+                    String objectCommonName = getObjectCommonName(username, client, configuration);
+                    logger.info("Removing password in ldap for " + objectCommonName);
+                    client.removeFromExistingContext(objectCommonName, attributesMap);
                 }
                 ableToSend = true;
             }
         } catch (Throwable t) {
             t.printStackTrace();
+        } finally {
+            client.logout();
         }
         return ableToSend;
     }
@@ -905,6 +959,8 @@ public class LdapIntegration {
             }
         } catch (Throwable t) {
             t.printStackTrace();
+        } finally {
+            client.logout();
         }
         return ableToSend;
     }
@@ -951,6 +1007,8 @@ public class LdapIntegration {
             }
         } catch (Throwable t) {
             t.printStackTrace();
+        } finally {
+            client.logout();
         }
         return ableToSend;
     }
