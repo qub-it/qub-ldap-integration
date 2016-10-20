@@ -1,5 +1,6 @@
 package com.qubit.solution.fenixedu.integration.ldap.ui.sync;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -52,6 +53,10 @@ public class PersonController extends LdapBaseController {
     }
 
     private List<Person> filterSearchPerson(String name, String username, String documentIdNumber) {
+        if (StringUtils.isEmpty(name) && StringUtils.isEmpty(username) && StringUtils.isEmpty(documentIdNumber)) {
+            return Collections.emptyList();
+        }
+
         Stream<Person> stream =
                 StringUtils.isEmpty(name) ? Party.getPartysSet(Person.class).stream() : Person.findPersonStream(name,
                         Integer.MAX_VALUE);
