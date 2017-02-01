@@ -54,35 +54,35 @@
 	<span class="glyphicon glyphicon-arrow-left" aria-hidden="true"></span>&nbsp;<a
 		class=""
 		href="${pageContext.request.contextPath}/ldap/ldapconfiguration/ldapserverintegrationconfiguration/"><spring:message
-			code="label.event.back" /></a> 
+			code="label.event.back" /></a>
 </div>
 <c:if test="${not empty infoMessages}">
-				<div class="alert alert-info" role="alert">
-					
-					<c:forEach items="${infoMessages}" var="message"> 
-						<p>${message}</p>
-					</c:forEach>
-					
-				</div>	
-			</c:if>
-			<c:if test="${not empty warningMessages}">
-				<div class="alert alert-warning" role="alert">
-					
-					<c:forEach items="${warningMessages}" var="message"> 
-						<p>${message}</p>
-					</c:forEach>
-					
-				</div>	
-			</c:if>
-			<c:if test="${not empty errorMessages}">
-				<div class="alert alert-danger" role="alert">
-					
-					<c:forEach items="${errorMessages}" var="message"> 
-						<p>${message}</p>
-					</c:forEach>
-					
-				</div>	
-			</c:if>
+	<div class="alert alert-info" role="alert">
+
+		<c:forEach items="${infoMessages}" var="message">
+			<p>${message}</p>
+		</c:forEach>
+
+	</div>
+</c:if>
+<c:if test="${not empty warningMessages}">
+	<div class="alert alert-warning" role="alert">
+
+		<c:forEach items="${warningMessages}" var="message">
+			<p>${message}</p>
+		</c:forEach>
+
+	</div>
+</c:if>
+<c:if test="${not empty errorMessages}">
+	<div class="alert alert-danger" role="alert">
+
+		<c:forEach items="${errorMessages}" var="message">
+			<p>${message}</p>
+		</c:forEach>
+
+	</div>
+</c:if>
 <form method="post" class="form-horizontal">
 	<div class="panel panel-default">
 		<div class="panel-body">
@@ -122,7 +122,7 @@
 						value='<c:out value='${not empty param.password ? param.password : ldapServerIntegrationConfiguration.password }'/>' />
 				</div>
 			</div>
-				<div class="form-group row">
+			<div class="form-group row">
 				<div class="col-sm-2 control-label">
 					<spring:message
 						code="label.LdapServerIntegrationConfiguration.passwordConfirmation" />
@@ -155,6 +155,18 @@
 					<input id="ldapServerIntegrationConfiguration_baseDomain"
 						class="form-control" type="text" name="basedomain"
 						value='<c:out value='${not empty param.basedomain ? param.basedomain : ldapServerIntegrationConfiguration.baseDomain }'/>' />
+				</div>
+			</div>
+			<div class="form-group row">
+				<div class="col-sm-2 control-label">
+					<spring:message
+						code="label.LdapServerIntegrationConfiguration.numberOfWorkers" />
+				</div>
+
+				<div class="col-sm-10">
+					<input id="ldapServerIntegrationConfiguration_numberOfWorkers"
+						class="form-control" type="text" name="numberOfWorkers"
+						value='<c:out value='${not empty param.numberOfWorkers ? param.numberOfWorkers : ldapServerIntegrationConfiguration.numberOfWorkers }'/>' />
 				</div>
 			</div>
 		</div>

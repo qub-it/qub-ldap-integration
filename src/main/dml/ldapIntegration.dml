@@ -33,6 +33,7 @@ class configuration.LdapServerIntegrationConfiguration {
 	String password;
 	String url;
 	String baseDomain;
+	Integer numberOfWorkers;
 }
 
 relation LdapIntegrationConfigurationRootDomainObject {
