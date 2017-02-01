@@ -173,6 +173,15 @@ public class LdapIntegration {
         if (query.getNumberOfResults() == 1) {
             QueryReplyElement next = query.getResults().iterator().next();
             ldapUsername = next.getSimpleAttribute(COMMON_NAME);
+        } else if (query.getNumberOfResults() > 1) {
+            logger.debug("Found more than one entry for username: " + username);
+            for (QueryReplyElement reply : query.getResults()) {
+                String simpleAttribute = reply.getSimpleAttribute(COMMON_NAME);
+                if (!simpleAttribute.startsWith("bennu")) {
+                    ldapUsername = simpleAttribute;
+                    break;
+                }
+            }
         }
         return ldapUsername;
     }
@@ -613,8 +622,11 @@ public class LdapIntegration {
             QueryReply query =
                     client.query("(|(" + COMMON_NAME + "=" + usernameToSearch + ")(" + UL_FENIXUSER + "=" + usernameToSearch
                             + "))", new String[] { UL_FENIXUSER });
-            if (query.getNumberOfResults() == 1) {
+            if (query.getNumberOfResults() > 0) {
                 isAvailable = true;
+            }
+            if (query.getNumberOfResults() > 1) {
+                logger.debug("Found duplicate entry for user: " + person.getUsername());
             }
         } catch (Throwable t) {
             t.printStackTrace();
@@ -631,8 +643,11 @@ public class LdapIntegration {
             QueryReply query =
                     client.query("(& (|(" + COMMON_NAME + "=" + usernameToSearch + ")(" + UL_FENIXUSER + "=" + usernameToSearch
                             + ")) (" + attributeName + "=*))", new String[] { UL_FENIXUSER });
-            if (query.getNumberOfResults() == 1) {
+            if (query.getNumberOfResults() > 0) {
                 isAvailable = true;
+            }
+            if (query.getNumberOfResults() > 1) {
+                logger.debug("Found duplicate entry for user: " + person.getUsername());
             }
         } catch (Throwable t) {
             t.printStackTrace();
