@@ -194,22 +194,6 @@ public class LdapIntegration {
                     break;
                 }
             }
-            if (query.getResults().size() == 2) {
-                QueryReplyElement replyOne = query.getResults().get(0);
-                QueryReplyElement replyTwo = query.getResults().get(1);
-
-                String usernameNameOne = replyOne.getSimpleAttribute(COMMON_NAME);
-                String usernameNameTwo = replyTwo.getSimpleAttribute(COMMON_NAME);
-                if (usernameNameOne.startsWith(bennuPrefix) && !usernameNameTwo.startsWith(bennuPrefix)) {
-                    logger.info("Detected duplicate user: " + usernameNameOne + " and " + usernameNameTwo + " for " + username
-                            + ". Removing " + usernameNameOne + " from ldap");
-                    deleteUser(usernameNameOne, getDefaultConfiguration());
-                } else if (!usernameNameOne.startsWith(bennuPrefix) && usernameNameTwo.startsWith(bennuPrefix)) {
-                    logger.info("Detected duplicate user: " + usernameNameOne + " and " + usernameNameTwo + " for " + username
-                            + ". Removing " + usernameNameTwo + " from ldap");
-                    deleteUser(usernameNameTwo, getDefaultConfiguration());
-                }
-            }
         }
         return ldapUsername;
     }
@@ -536,16 +520,23 @@ public class LdapIntegration {
         return builder;
     }
 
-    public static boolean deleteUser(String username, LdapServerIntegrationConfiguration configuration) {
+    private static boolean deleteCommonName(String commonName, LdapServerIntegrationConfiguration configuration) {
         boolean ableToSend = false;
         LdapClient client = configuration.getClient();
         try {
-            client.deleteContext(getObjectCommonName(username, client, configuration));
-            ableToSend = true;
+            if (client.login()) {
+                client.deleteContext(commonName);
+                ableToSend = true;
+            }
         } catch (Throwable t) {
             t.printStackTrace();
         }
         return ableToSend;
+    }
+
+    public static boolean deleteUser(String username, LdapServerIntegrationConfiguration configuration) {
+        LdapClient client = configuration.getClient();
+        return deleteCommonName(getObjectCommonName(username, client, configuration), configuration);
     }
 
     private static boolean isSynched(Map<String, String[]> syncInformation) {
@@ -652,12 +643,15 @@ public class LdapIntegration {
 
             QueryReply query = client.query(
                     "(|(" + COMMON_NAME + "=" + usernameToSearch + ")(" + UL_FENIXUSER + "=" + usernameToSearch + "))",
-                    new String[] { UL_FENIXUSER });
+                    new String[] { COMMON_NAME, UL_FENIXUSER });
             if (query.getNumberOfResults() > 0) {
                 isAvailable = true;
             }
             if (query.getNumberOfResults() > 1) {
                 logger.debug("Found duplicate entry for user: " + person.getUsername());
+            }
+            if (query.getNumberOfResults() == 2) {
+                tryToFix(query, usernameToSearch);
             }
         } catch (Throwable t) {
             t.printStackTrace();
@@ -702,8 +696,11 @@ public class LdapIntegration {
             try {
                 AttributesMap attributesMap = collectAttributeMap(student);
                 List<String> objectClasses = new ArrayList<String>();
-                QueryReply query = client.query("(&(" + COMMON_NAME + "=" + getCorrectCN(person.getUsername(), client)
-                        + ")(objectClass=" + STUDENT_CLASS_PREFIX + getSchoolCode() + "))", new String[] { COMMON_NAME });
+                String correctCN = getCorrectCN(person.getUsername(), client);
+                QueryReply query = client.query(
+                        "(&(" + COMMON_NAME + "=" + correctCN + ")(objectClass=" + STUDENT_CLASS_PREFIX + getSchoolCode() + "))",
+                        new String[] { COMMON_NAME });
+
                 if (query.getNumberOfResults() == 1) {
                     client.replaceInExistingContext(getPersonCommonName(person, client, configuration), objectClasses,
                             attributesMap);
@@ -719,6 +716,26 @@ public class LdapIntegration {
 
         return ableToUpdateStudent;
 
+    }
+
+    private static void tryToFix(QueryReply query, String username) {
+        String bennuPrefix = "bennu";
+        QueryReplyElement replyOne = query.getResults().get(0);
+        QueryReplyElement replyTwo = query.getResults().get(1);
+
+        String usernameNameOne = replyOne.getSimpleAttribute(COMMON_NAME);
+        String usernameNameTwo = replyTwo.getSimpleAttribute(COMMON_NAME);
+        if (usernameNameOne.startsWith(bennuPrefix) && !usernameNameTwo.startsWith(bennuPrefix)) {
+            logger.info("Detected duplicate user: " + usernameNameOne + " and " + usernameNameTwo + " for " + username
+                    + ". Removing " + usernameNameOne + " from ldap");
+            deleteCommonName(COMMON_NAME + "=" + usernameNameOne + "," + getDefaultConfiguration().getBaseDomain(),
+                    getDefaultConfiguration());
+        } else if (!usernameNameOne.startsWith(bennuPrefix) && usernameNameTwo.startsWith(bennuPrefix)) {
+            logger.info("Detected duplicate user: " + usernameNameOne + " and " + usernameNameTwo + " for " + username
+                    + ". Removing " + usernameNameTwo + " from ldap");
+            deleteCommonName(COMMON_NAME + "=" + usernameNameTwo + "," + getDefaultConfiguration().getBaseDomain(),
+                    getDefaultConfiguration());
+        }
     }
 
     public static boolean createPersonInLdap(Person person) {
