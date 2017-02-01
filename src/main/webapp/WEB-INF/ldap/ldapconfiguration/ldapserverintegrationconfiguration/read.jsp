@@ -127,6 +127,12 @@ ${portal.toolkit()}
 		<c:out value='${ldapServerIntegrationConfiguration.baseDomain}'/>
 	</td> 
 </tr>
+<tr>
+	<th scope="row" class="col-xs-3"><spring:message code="label.LdapServerIntegrationConfiguration.numberOfWorkers"/></th> 
+	<td>
+		<c:out value='${ldapServerIntegrationConfiguration.numberOfWorkers}'/>
+	</td> 
+</tr>
 </tbody>
 </table>
 </form>

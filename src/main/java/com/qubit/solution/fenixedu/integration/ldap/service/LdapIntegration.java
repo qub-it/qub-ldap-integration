@@ -66,8 +66,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.format.datetime.joda.DateTimeFormatterFactory;
 
-import pt.ist.fenixframework.Atomic;
-
 import com.google.common.io.BaseEncoding;
 import com.qubit.solution.fenixedu.integration.ldap.domain.configuration.LdapServerIntegrationConfiguration;
 import com.qubit.terra.ldapclient.AttributesMap;
@@ -77,14 +75,15 @@ import com.qubit.terra.ldapclient.QueryReplyElement;
 
 import edu.emory.mathcs.backport.java.util.Arrays;
 import edu.emory.mathcs.backport.java.util.Collections;
+import pt.ist.fenixframework.Atomic;
 
 public class LdapIntegration {
 
     private static final Logger logger = LoggerFactory.getLogger(LdapIntegration.class);
 
     //
-    // Evaluate effort to make this fields dynamic using a domain entity 
-    // 
+    // Evaluate effort to make this fields dynamic using a domain entity
+    //
     // 20 April 2015 - Paulo Abrantes
     private static final String UL_STUDENT_ACTIVE_ATTRIBUTE = "ULStudentActive";
     private static final String UL_ROLE_ATTRIBUTE = "ULRole";
@@ -109,9 +108,9 @@ public class LdapIntegration {
     private static final String UL_COURSES = "ULCourses";
     private static final String COMMON_NAME = "cn";
 
-    // Attribute from ULFenixUser class (yes same name..I know) 
+    // Attribute from ULFenixUser class (yes same name..I know)
     // This must old the original username of the user in Fenix
-    // 
+    //
     // 30 July 2015 - Paulo ABrantes
     private static final String UL_FENIXUSER = "ULFenixUser";
 
@@ -122,11 +121,15 @@ public class LdapIntegration {
 
     // All the fields in this variable are from ULAuxUser LDAP class.
     //
-    // This fields are used to show in the synchronized interface and also used by isUpdatedNeeded(Person) 
+    // This fields are used to show in the synchronized interface and also used
+    // by isUpdatedNeeded(Person)
     //
-    // To check if a given person is synchronized this fields are requested to ldap and we also call
-    // collectAttributeMap with the given person. Then for each field here we iterate and check if both
-    // values are equal or not. If all is equal then things are up to date, otherwise they are not.
+    // To check if a given person is synchronized this fields are requested to
+    // ldap and we also call
+    // collectAttributeMap with the given person. Then for each field here we
+    // iterate and check if both
+    // values are equal or not. If all is equal then things are up to date,
+    // otherwise they are not.
     //
     // 30 July 2015 - Paulo Abrantes
     private static final String[] PERSON_FIELDS_TO_SYNC = new String[] { FULL_NAME_ATTRIBUTE, GIVEN_NAME_ATTRIBUTE,
@@ -141,27 +144,35 @@ public class LdapIntegration {
     // Same thing as the PERSON_FIELDS_INTERFACE but for the Student class
     //
     // 30 July 2015 - Paulo Abrantes
-    private static final String[] STUDENT_FIELDS_TO_SYNC = new String[] { UL_STUDENT_CODE + getSchoolCode(),
-            UL_COURSES + getSchoolCode() };
+    private static final String[] STUDENT_FIELDS_TO_SYNC =
+            new String[] { UL_STUDENT_CODE + getSchoolCode(), UL_COURSES + getSchoolCode() };
 
     private static String getSchoolCode() {
         return Bennu.getInstance().getInstitutionUnit().getAcronym();
     }
 
-    // When we send a person to LDAP its CN is the person's username, which on the first creation
-    // is equal to the attribute in ULFenixUser. IDM then proceeds to do a match and WILL REWRITE
+    // When we send a person to LDAP its CN is the person's username, which on
+    // the first creation
+    // is equal to the attribute in ULFenixUser. IDM then proceeds to do a match
+    // and WILL REWRITE
     // CN to campus username.
     //
-    // This means that if I create a user for me in the system called bennu123, when it reaches 
-    // LDAP it will be CN=bennu123 ULFenixUser=bennu123. Since I have a campus ID, IDM will do a
-    // match and rewrite the CN. At this moment the register in LDAP will be CN=paulo.abrantes
+    // This means that if I create a user for me in the system called bennu123,
+    // when it reaches
+    // LDAP it will be CN=bennu123 ULFenixUser=bennu123. Since I have a campus
+    // ID, IDM will do a
+    // match and rewrite the CN. At this moment the register in LDAP will be
+    // CN=paulo.abrantes
     // ULFenixUser=bennu123.
     //
-    // If by that time no login has been done in Fenix my username in Fenix will still be bennu123
-    // but my CN will no longer be bennu123 but paulo.abrantes. This method handles those situations
+    // If by that time no login has been done in Fenix my username in Fenix will
+    // still be bennu123
+    // but my CN will no longer be bennu123 but paulo.abrantes. This method
+    // handles those situations
     // returning always the correct CN for any given username.
     //
-    // Side note: When a user log's into Fenix the system detects the CN has change and changes
+    // Side note: When a user log's into Fenix the system detects the CN has
+    // change and changes
     // the username accordingly.
     //
     // 30 July 2015 - Paulo Abrantes
@@ -173,23 +184,38 @@ public class LdapIntegration {
         if (query.getNumberOfResults() == 1) {
             QueryReplyElement next = query.getResults().iterator().next();
             ldapUsername = next.getSimpleAttribute(COMMON_NAME);
+        } else if (query.getNumberOfResults() > 1) {
+            logger.debug("Found more than one entry for username: " + username);
+            String bennuPrefix = "bennu";
+            for (QueryReplyElement reply : query.getResults()) {
+                String simpleAttribute = reply.getSimpleAttribute(COMMON_NAME);
+                if (!simpleAttribute.startsWith(bennuPrefix)) {
+                    ldapUsername = simpleAttribute;
+                    break;
+                }
+            }
         }
         return ldapUsername;
     }
 
-    // When refering to an object in ldap we can't only give his CN but also the domain. Both the 
-    // methods below 
+    // When refering to an object in ldap we can't only give his CN but also the
+    // domain. Both the
+    // methods below
     //
-    private static String getObjectCommonName(String username, LdapClient client, LdapServerIntegrationConfiguration configuration) {
+    private static String getObjectCommonName(String username, LdapClient client,
+            LdapServerIntegrationConfiguration configuration) {
         return COMMON_NAME + "=" + getCorrectCN(username, client) + "," + configuration.getBaseDomain();
     }
 
-    private static String getPersonCommonName(Person person, LdapClient client, LdapServerIntegrationConfiguration configuration) {
+    private static String getPersonCommonName(Person person, LdapClient client,
+            LdapServerIntegrationConfiguration configuration) {
         return getObjectCommonName(person.getUsername(), client, configuration);
     }
 
-    // This is an extraction of collectAttributeMap(Student student) because collectAttributeMap(Person person)
-    // also calls this if a person has a student so every field is filled singleshot.
+    // This is an extraction of collectAttributeMap(Student student) because
+    // collectAttributeMap(Person person)
+    // also calls this if a person has a student so every field is filled
+    // singleshot.
     //
     // 30 July 2015 - Paulo Abrantes
     private static void collecStudentAttributes(Student student, AttributesMap attributesMap) {
@@ -212,14 +238,15 @@ public class LdapIntegration {
 
     }
 
-    // Collects data from a student, these are fields from ULAUXFac<School> ldap class
+    // Collects data from a student, these are fields from ULAUXFac<School> ldap
+    // class
     private static AttributesMap collectAttributeMap(Student student) {
         AttributesMap attributesMap = new AttributesMap();
         collecStudentAttributes(student, attributesMap);
         return attributesMap;
     }
 
-    // Collects data from a person, these are fields from ULAuxUser ldap class 
+    // Collects data from a person, these are fields from ULAuxUser ldap class
     private static AttributesMap collectAttributeMap(Person person) {
         String schooldCode = getSchoolCode();
 
@@ -230,7 +257,7 @@ public class LdapIntegration {
         boolean isEmployee = isEmployee(person);
         boolean isAlumni = isAlumni(person);
 
-        // REQUIRED 
+        // REQUIRED
         attributesMap.add(UL_STUDENT_ACTIVE_ATTRIBUTE + schooldCode, String.valueOf(isStudent).toUpperCase());
         attributesMap.add(UL_TEACHER_ACTIVE_ATTRIBUTE + schooldCode, String.valueOf(isTeacher).toUpperCase());
         attributesMap.add(UL_EMPLOYEE_ACTIVE_ATTRIBUTE + schooldCode, String.valueOf(isEmployee).toUpperCase());
@@ -253,16 +280,16 @@ public class LdapIntegration {
 
         // OPTIONAL
 
-        // José Lima said during the presentation of 1st year 1st time on the 25th August 
-        // 2015 that we should send the personal email as soon as you have it, even if not
+        // José Lima said during the presentation of 1st year 1st time on the
+        // 25th August
+        // 2015 that we should send the personal email as soon as you have it,
+        // even if not
         // validated yet.
         //
-        // 25 August 2015 
+        // 25 August 2015
         Optional<? extends PartyContact> personalEmail =
-                person.getPartyContactsSet()
-                        .stream()
-                        .filter(partyContact -> partyContact instanceof EmailAddress
-                                && Boolean.TRUE.equals(partyContact.getActive()) && partyContact.isPersonalType()).findFirst();
+                person.getPartyContactsSet().stream().filter(partyContact -> partyContact instanceof EmailAddress
+                        && Boolean.TRUE.equals(partyContact.getActive()) && partyContact.isPersonalType()).findFirst();
         if (personalEmail.isPresent()) {
             attributesMap.add(UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, personalEmail.get().getPresentationValue());
         } else {
@@ -327,10 +354,9 @@ public class LdapIntegration {
         intervals.addAll(previousExecutionYear.getExecutionPeriodsSet().stream().map(ExecutionSemester::getAcademicInterval)
                 .collect(Collectors.toList()));
 
-        return person.getTeacher() != null
-                && !person.getTeacher().getTeacherAuthorizationStream()
-                        .filter(authorization -> intervals.contains(authorization.getExecutionSemester().getAcademicInterval()))
-                        .collect(Collectors.toList()).isEmpty();
+        return person.getTeacher() != null && !person.getTeacher().getTeacherAuthorizationStream()
+                .filter(authorization -> intervals.contains(authorization.getExecutionSemester().getAcademicInterval()))
+                .collect(Collectors.toList()).isEmpty();
     }
 
     private static boolean isEmployee(Person person) {
@@ -345,9 +371,8 @@ public class LdapIntegration {
         LdapClient ldapClient = configuration.getClient();
         try {
             if (ldapClient.login()) {
-                QueryReply query =
-                        ldapClient.query(COMMON_NAME + "=" + getCorrectCN(person.getUsername(), ldapClient),
-                                new String[] { UL_FENIXUSER });
+                QueryReply query = ldapClient.query(COMMON_NAME + "=" + getCorrectCN(person.getUsername(), ldapClient),
+                        new String[] { UL_FENIXUSER });
                 if (query.getNumberOfResults() == 1) {
                     QueryReplyElement next = query.getResults().iterator().next();
                     String originalFenixUsername = next.getSimpleAttribute(UL_FENIXUSER);
@@ -405,7 +430,7 @@ public class LdapIntegration {
     }
 
     // Map with each property and a string array
-    // position 0 local, position 1 ldap info 
+    // position 0 local, position 1 ldap info
     //
 
     private static Map<String, String[]> retrieveSyncInfo(AttributesMap collectedMap, String[] fields, Person person,
@@ -495,16 +520,23 @@ public class LdapIntegration {
         return builder;
     }
 
-    public static boolean deleteUser(String username, LdapServerIntegrationConfiguration configuration) {
+    private static boolean deleteCommonName(String commonName, LdapServerIntegrationConfiguration configuration) {
         boolean ableToSend = false;
         LdapClient client = configuration.getClient();
         try {
-            client.deleteContext(getObjectCommonName(username, client, configuration));
-            ableToSend = true;
+            if (client.login()) {
+                client.deleteContext(commonName);
+                ableToSend = true;
+            }
         } catch (Throwable t) {
             t.printStackTrace();
         }
         return ableToSend;
+    }
+
+    public static boolean deleteUser(String username, LdapServerIntegrationConfiguration configuration) {
+        LdapClient client = configuration.getClient();
+        return deleteCommonName(getObjectCommonName(username, client, configuration), configuration);
     }
 
     private static boolean isSynched(Map<String, String[]> syncInformation) {
@@ -514,7 +546,8 @@ public class LdapIntegration {
             String value0 = parameter[0];
             String value1 = parameter[1];
             //
-            // Yes yes... I know it's ugly.. but the date also has the time and we
+            // Yes yes... I know it's ugly.. but the date also has the time and
+            // we
             // don't want that!
             //
             // 29 July 2015 - Paulo Abrantes
@@ -545,10 +578,8 @@ public class LdapIntegration {
     private static boolean isUpdateNeeded(Person person, LdapClient client, LdapServerIntegrationConfiguration configuration) {
         Map<String, String[]> retrieveSyncInformation = retrieveSyncInformation(person, client, configuration);
         boolean isPersonUpdated = isSynched(retrieveSyncInformation);
-        boolean isStudentUpdated =
-                isPersonUpdated
-                        && (person.getStudent() == null || isSynched(retrieveSyncInformation(person.getStudent(), client,
-                                configuration)));
+        boolean isStudentUpdated = isPersonUpdated && (person.getStudent() == null
+                || isSynched(retrieveSyncInformation(person.getStudent(), client, configuration)));
 
         return !isPersonUpdated || !isStudentUpdated;
     }
@@ -610,11 +641,17 @@ public class LdapIntegration {
         try {
             String usernameToSearch = person.getUsername();
 
-            QueryReply query =
-                    client.query("(|(" + COMMON_NAME + "=" + usernameToSearch + ")(" + UL_FENIXUSER + "=" + usernameToSearch
-                            + "))", new String[] { UL_FENIXUSER });
-            if (query.getNumberOfResults() == 1) {
+            QueryReply query = client.query(
+                    "(|(" + COMMON_NAME + "=" + usernameToSearch + ")(" + UL_FENIXUSER + "=" + usernameToSearch + "))",
+                    new String[] { COMMON_NAME, UL_FENIXUSER });
+            if (query.getNumberOfResults() > 0) {
                 isAvailable = true;
+            }
+            if (query.getNumberOfResults() > 1) {
+                logger.debug("Found duplicate entry for user: " + person.getUsername());
+            }
+            if (query.getNumberOfResults() == 2) {
+                tryToFix(query, usernameToSearch);
             }
         } catch (Throwable t) {
             t.printStackTrace();
@@ -628,11 +665,13 @@ public class LdapIntegration {
         try {
             String usernameToSearch = person.getUsername();
 
-            QueryReply query =
-                    client.query("(& (|(" + COMMON_NAME + "=" + usernameToSearch + ")(" + UL_FENIXUSER + "=" + usernameToSearch
-                            + ")) (" + attributeName + "=*))", new String[] { UL_FENIXUSER });
-            if (query.getNumberOfResults() == 1) {
+            QueryReply query = client.query("(& (|(" + COMMON_NAME + "=" + usernameToSearch + ")(" + UL_FENIXUSER + "="
+                    + usernameToSearch + ")) (" + attributeName + "=*))", new String[] { UL_FENIXUSER });
+            if (query.getNumberOfResults() > 0) {
                 isAvailable = true;
+            }
+            if (query.getNumberOfResults() > 1) {
+                logger.debug("Found duplicate entry for user: " + person.getUsername());
             }
         } catch (Throwable t) {
             t.printStackTrace();
@@ -657,9 +696,11 @@ public class LdapIntegration {
             try {
                 AttributesMap attributesMap = collectAttributeMap(student);
                 List<String> objectClasses = new ArrayList<String>();
-                QueryReply query =
-                        client.query("(&(" + COMMON_NAME + "=" + getCorrectCN(person.getUsername(), client) + ")(objectClass="
-                                + STUDENT_CLASS_PREFIX + getSchoolCode() + "))", new String[] { COMMON_NAME });
+                String correctCN = getCorrectCN(person.getUsername(), client);
+                QueryReply query = client.query(
+                        "(&(" + COMMON_NAME + "=" + correctCN + ")(objectClass=" + STUDENT_CLASS_PREFIX + getSchoolCode() + "))",
+                        new String[] { COMMON_NAME });
+
                 if (query.getNumberOfResults() == 1) {
                     client.replaceInExistingContext(getPersonCommonName(person, client, configuration), objectClasses,
                             attributesMap);
@@ -677,6 +718,26 @@ public class LdapIntegration {
 
     }
 
+    private static void tryToFix(QueryReply query, String username) {
+        String bennuPrefix = "bennu";
+        QueryReplyElement replyOne = query.getResults().get(0);
+        QueryReplyElement replyTwo = query.getResults().get(1);
+
+        String usernameNameOne = replyOne.getSimpleAttribute(COMMON_NAME);
+        String usernameNameTwo = replyTwo.getSimpleAttribute(COMMON_NAME);
+        if (usernameNameOne.startsWith(bennuPrefix) && !usernameNameTwo.startsWith(bennuPrefix)) {
+            logger.info("Detected duplicate user: " + usernameNameOne + " and " + usernameNameTwo + " for " + username
+                    + ". Removing " + usernameNameOne + " from ldap");
+            deleteCommonName(COMMON_NAME + "=" + usernameNameOne + "," + getDefaultConfiguration().getBaseDomain(),
+                    getDefaultConfiguration());
+        } else if (!usernameNameOne.startsWith(bennuPrefix) && usernameNameTwo.startsWith(bennuPrefix)) {
+            logger.info("Detected duplicate user: " + usernameNameOne + " and " + usernameNameTwo + " for " + username
+                    + ". Removing " + usernameNameTwo + " from ldap");
+            deleteCommonName(COMMON_NAME + "=" + usernameNameTwo + "," + getDefaultConfiguration().getBaseDomain(),
+                    getDefaultConfiguration());
+        }
+    }
+
     public static boolean createPersonInLdap(Person person) {
         return createPersonInLdap(person, getDefaultConfiguration());
     }
@@ -685,7 +746,8 @@ public class LdapIntegration {
         return createOrUpdatePeopleInLdap(Collections.singletonList(person), configuration);
     }
 
-    public static boolean createOrUpdatePeopleInLdap(Collection<Person> people, LdapServerIntegrationConfiguration configuration) {
+    public static boolean createOrUpdatePeopleInLdap(Collection<Person> people,
+            LdapServerIntegrationConfiguration configuration) {
         boolean ableToSend = false;
         LdapClient client = configuration.getClient();
         boolean login = client.login();
@@ -694,7 +756,8 @@ public class LdapIntegration {
 
                 for (Person person : people) {
                     String personCommonName = getPersonCommonName(person, client, configuration);
-                    // This is the admin username we do not want to sync that one.
+                    // This is the admin username we do not want to sync that
+                    // one.
                     // 10 September 2015 - Paulo Abrantes
                     if (personCommonName.equals(configuration.getUsername())) {
                         continue;
@@ -706,8 +769,9 @@ public class LdapIntegration {
                         }
                         try {
                             AttributesMap collectAttributeMap = collectAttributeMap(person);
-                            // Only when creating the person we want to add this field
-                            // afterwards we want this field to stay put. 
+                            // Only when creating the person we want to add this
+                            // field
+                            // afterwards we want this field to stay put.
                             //
                             // 30 July 2015 - Paulo Abrantes
                             collectAttributeMap.add(UL_FENIXUSER, person.getUsername());
@@ -717,19 +781,24 @@ public class LdapIntegration {
                         }
                     } else if (isUpdateNeeded(person, client, configuration)) {
                         List<String> objectClasses = new ArrayList<String>(Arrays.asList(OBJECT_CLASSES_TO_ADD));
-                        QueryReply query =
-                                client.query("(&(" + COMMON_NAME + "=" + getCorrectCN(person.getUsername(), client)
-                                        + ")(objectClass=" + STUDENT_CLASS_PREFIX + getSchoolCode() + "))",
-                                        new String[] { COMMON_NAME });
+                        QueryReply query = client.query("(&(" + COMMON_NAME + "=" + getCorrectCN(person.getUsername(), client)
+                                + ")(objectClass=" + STUDENT_CLASS_PREFIX + getSchoolCode() + "))", new String[] { COMMON_NAME });
 
                         if (query.getNumberOfResults() == 1) {
-                            // The person is a student so we have to add this class as well
+                            // The person is a student so we have to add this
+                            // class as well
                             objectClasses.add(STUDENT_CLASS_PREFIX + getSchoolCode());
                         } else if (person.getStudent() != null) {
-                            // In the creation we are considering that a person with a student in fenix will also have the student class in LDAP.
-                            // This must also be considered here since further logic (e.g in collecStudentAttributes)
-                            // Will add student attributes to the LDAP message based on this condition 
-                            // PS: This condition could be tested before the ldap query improving performance, but let's keep it here temporarly to avoid risk
+                            // In the creation we are considering that a person
+                            // with a student in fenix will also have the
+                            // student class in LDAP.
+                            // This must also be considered here since further
+                            // logic (e.g in collecStudentAttributes)
+                            // Will add student attributes to the LDAP message
+                            // based on this condition
+                            // PS: This condition could be tested before the
+                            // ldap query improving performance, but let's keep
+                            // it here temporarly to avoid risk
                             // Nuno Pinheiro 03/08/2015
                             objectClasses.add(STUDENT_CLASS_PREFIX + getSchoolCode());
                         }
@@ -770,9 +839,8 @@ public class LdapIntegration {
         try {
             if (client.login()) {
                 try {
-                    QueryReply query =
-                            client.query(COMMON_NAME + "=" + person.getUsername(), new String[] {
-                                    UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + schoolCode, UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE,
+                    QueryReply query = client.query(COMMON_NAME + "=" + person.getUsername(),
+                            new String[] { UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE + schoolCode, UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE,
                                     INTERNET_EMAIL_ADDRESS, UL_BIRTH_DATE_ATTRIBUTE, UL_BI_ATTRIBUTE, UL_SEX_ATTRIBUTE,
                                     GIVEN_NAME_ATTRIBUTE, LAST_NAME_ATTRIBUTE });
                     if (query.getNumberOfResults() == 1) {
@@ -806,10 +874,12 @@ public class LdapIntegration {
     private static void updatePerson(Person person, String instituionalEmail, String personalEmail, String birthDate,
             String documentID, String sex, String givenNames, String surnames) {
 
-//        if (person.getDocumentIdNumber() != null && !person.getDocumentIdNumber().equals(documentID)) {
-//            throw new IllegalStateException(
-//                    "Seems we are trying to update a person that does not match the ID. This should not happen!");
-//        }
+        // if (person.getDocumentIdNumber() != null &&
+        // !person.getDocumentIdNumber().equals(documentID)) {
+        // throw new IllegalStateException(
+        // "Seems we are trying to update a person that does not match the ID.
+        // This should not happen!");
+        // }
 
         String institutionalEmailAddressValue = person.getInstitutionalEmailAddressValue();
         if (!StringUtils.isEmpty(instituionalEmail)
@@ -831,9 +901,8 @@ public class LdapIntegration {
             LocalDate parseLocalDate = new DateTimeFormatterFactory(format).createDateTimeFormatter().parseLocalDate(birthDate);
             YearMonthDay dateOfBirthYearMonthDay = person.getDateOfBirthYearMonthDay();
             if (dateOfBirthYearMonthDay == null || !parseLocalDate.isEqual(dateOfBirthYearMonthDay)) {
-                YearMonthDay yearMonthDay =
-                        new YearMonthDay(parseLocalDate.getYear(), parseLocalDate.getMonthOfYear(),
-                                parseLocalDate.getDayOfMonth());
+                YearMonthDay yearMonthDay = new YearMonthDay(parseLocalDate.getYear(), parseLocalDate.getMonthOfYear(),
+                        parseLocalDate.getDayOfMonth());
                 person.setDateOfBirthYearMonthDay(yearMonthDay);
             }
         }
@@ -885,7 +954,8 @@ public class LdapIntegration {
         return attributeSent;
     }
 
-    // Tools to help creating a fenix users only. This user will no be aligned by IDM. 
+    // Tools to help creating a fenix users only. This user will no be aligned
+    // by IDM.
     // This will be used by the candidates.
     //
     // 30 July 2015 - Paulo Abrantes
@@ -921,8 +991,7 @@ public class LdapIntegration {
         try {
             if (client.login()) {
                 QueryReply query =
-                        client.query(
-                                "(& (" + COMMON_NAME + "=" + getCorrectCN(username, client) + ") (" + USER_PASSWORD + "=*))",
+                        client.query("(& (" + COMMON_NAME + "=" + getCorrectCN(username, client) + ") (" + USER_PASSWORD + "=*))",
                                 new String[] { COMMON_NAME });
                 if (query.getNumberOfResults() == 1) {
                     String objectCommonName = getObjectCommonName(username, client, configuration);
@@ -974,9 +1043,8 @@ public class LdapIntegration {
         LdapClient client = configuration.getClient();
         try {
             if (client.login()) {
-                ableToRename =
-                        client.renameContext(getPersonCommonName(person, client, configuration), COMMON_NAME + "=" + newUsername
-                                + "," + configuration.getBaseDomain());
+                ableToRename = client.renameContext(getPersonCommonName(person, client, configuration),
+                        COMMON_NAME + "=" + newUsername + "," + configuration.getBaseDomain());
             }
         } catch (Throwable t) {
             t.printStackTrace();

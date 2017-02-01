@@ -40,12 +40,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import pt.ist.fenixframework.Atomic;
-
 import com.qubit.solution.fenixedu.integration.ldap.domain.configuration.LdapServerIntegrationConfiguration;
 import com.qubit.solution.fenixedu.integration.ldap.ui.LdapBaseController;
 import com.qubit.solution.fenixedu.integration.ldap.ui.LdapController;
 import com.qubit.terra.ldapclient.LdapClient;
+
+import pt.ist.fenixframework.Atomic;
 
 @SpringFunctionality(app = LdapController.class, title = "label.title.ldapConfiguration", accessGroup = "#managers")
 @RequestMapping("/ldap/ldapconfiguration/ldapserverintegrationconfiguration")
@@ -74,8 +74,8 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
     }
 
     @RequestMapping(value = "/")
-    public String search(@RequestParam(value = "serverid", required = false) java.lang.String serverID, @RequestParam(
-            value = "basedomain", required = false) java.lang.String baseDomain, Model model) {
+    public String search(@RequestParam(value = "serverid", required = false) java.lang.String serverID,
+            @RequestParam(value = "basedomain", required = false) java.lang.String baseDomain, Model model) {
         List<LdapServerIntegrationConfiguration> searchldapserverintegrationconfigurationResultsDataSet =
                 filterSearchLdapServerIntegrationConfiguration(serverID, baseDomain);
 
@@ -91,18 +91,18 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
     private List<LdapServerIntegrationConfiguration> filterSearchLdapServerIntegrationConfiguration(java.lang.String serverID,
             java.lang.String baseDomain) {
 
-        return getSearchUniverseSearchLdapServerIntegrationConfigurationDataSet()
-                .stream()
-                .filter(ldapServerIntegrationConfiguration -> serverID == null
-                        || serverID.length() == 0
+        return getSearchUniverseSearchLdapServerIntegrationConfigurationDataSet().stream()
+                .filter(ldapServerIntegrationConfiguration -> serverID == null || serverID.length() == 0
                         || (ldapServerIntegrationConfiguration.getServerID() != null
-                                && ldapServerIntegrationConfiguration.getServerID().length() > 0 && ldapServerIntegrationConfiguration
-                                .getServerID().toLowerCase().contains(serverID.toLowerCase())))
-                .filter(ldapServerIntegrationConfiguration -> baseDomain == null
-                        || baseDomain.length() == 0
+                                && ldapServerIntegrationConfiguration.getServerID().length() > 0
+                                && ldapServerIntegrationConfiguration.getServerID().toLowerCase()
+                                        .contains(serverID.toLowerCase())))
+                .filter(ldapServerIntegrationConfiguration -> baseDomain == null || baseDomain.length() == 0
                         || (ldapServerIntegrationConfiguration.getBaseDomain() != null
-                                && ldapServerIntegrationConfiguration.getBaseDomain().length() > 0 && ldapServerIntegrationConfiguration
-                                .getBaseDomain().toLowerCase().contains(baseDomain.toLowerCase()))).collect(Collectors.toList());
+                                && ldapServerIntegrationConfiguration.getBaseDomain().length() > 0
+                                && ldapServerIntegrationConfiguration.getBaseDomain().toLowerCase()
+                                        .contains(baseDomain.toLowerCase())))
+                .collect(Collectors.toList());
     }
 
     @RequestMapping(value = "/search/disableDefault", method = RequestMethod.POST)
@@ -163,12 +163,13 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
     }
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
-    public String create(@RequestParam(value = "serverid", required = false) java.lang.String serverID, @RequestParam(
-            value = "username", required = false) java.lang.String username,
-            @RequestParam(value = "password", required = false) java.lang.String password, @RequestParam(
-                    value = "passwordConfirmation", required = false) java.lang.String passwordConfirmation, @RequestParam(
-                    value = "url", required = false) java.lang.String url,
-            @RequestParam(value = "basedomain", required = false) java.lang.String baseDomain, Model model) {
+    public String create(@RequestParam(value = "serverid", required = false) java.lang.String serverID,
+            @RequestParam(value = "username", required = false) java.lang.String username,
+            @RequestParam(value = "password", required = false) java.lang.String password,
+            @RequestParam(value = "passwordConfirmation", required = false) java.lang.String passwordConfirmation,
+            @RequestParam(value = "url", required = false) java.lang.String url,
+            @RequestParam(value = "basedomain", required = false) java.lang.String baseDomain,
+            @RequestParam(value = "numberOfWorkers", required = false) java.lang.Integer numberOfWorkers, Model model) {
 
         if (!password.equals(passwordConfirmation)) {
             addErrorMessage("Password and password confirmation do not match", model);
@@ -179,7 +180,7 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
 
         try {
             ldapServerIntegrationConfiguration =
-                    createLdapServerIntegrationConfiguration(serverID, username, password, url, baseDomain);
+                    createLdapServerIntegrationConfiguration(serverID, username, password, url, baseDomain, numberOfWorkers);
         } catch (DomainException e) {
             addErrorMessage(e.getMessage(), model);
             return create(model);
@@ -192,9 +193,11 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
 
     @Atomic
     public LdapServerIntegrationConfiguration createLdapServerIntegrationConfiguration(java.lang.String serverID,
-            java.lang.String username, java.lang.String password, java.lang.String url, java.lang.String baseDomain) {
+            java.lang.String username, java.lang.String password, java.lang.String url, java.lang.String baseDomain,
+            Integer numberOfWorkers) {
         LdapServerIntegrationConfiguration ldapServerIntegrationConfiguration =
                 new LdapServerIntegrationConfiguration(serverID, username, password, url, baseDomain);
+        ldapServerIntegrationConfiguration.setNumberOfWorkers(numberOfWorkers);
         return ldapServerIntegrationConfiguration;
     }
 
@@ -205,18 +208,20 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
     }
 
     @RequestMapping(value = "/update/{oid}", method = RequestMethod.GET)
-    public String update(@PathVariable("oid") LdapServerIntegrationConfiguration ldapServerIntegrationConfiguration, Model model) {
+    public String update(@PathVariable("oid") LdapServerIntegrationConfiguration ldapServerIntegrationConfiguration,
+            Model model) {
         setLdapServerIntegrationConfiguration(ldapServerIntegrationConfiguration, model);
         return "ldap/ldapconfiguration/ldapserverintegrationconfiguration/update";
     }
 
     @RequestMapping(value = "/update/{oid}", method = RequestMethod.POST)
     public String update(@PathVariable("oid") LdapServerIntegrationConfiguration ldapServerIntegrationConfiguration,
-            @RequestParam(value = "username", required = false) java.lang.String username, @RequestParam(value = "password",
-                    required = false) java.lang.String password,
-            @RequestParam(value = "passwordConfirmation", required = false) java.lang.String passwordConfirmation, @RequestParam(
-                    value = "url", required = false) java.lang.String url,
-            @RequestParam(value = "basedomain", required = false) java.lang.String baseDomain, Model model) {
+            @RequestParam(value = "username", required = false) java.lang.String username,
+            @RequestParam(value = "password", required = false) java.lang.String password,
+            @RequestParam(value = "passwordConfirmation", required = false) java.lang.String passwordConfirmation,
+            @RequestParam(value = "url", required = false) java.lang.String url,
+            @RequestParam(value = "basedomain", required = false) java.lang.String baseDomain,
+            @RequestParam(value = "numberOfWorkers", required = false) java.lang.Integer numberOfWorkers, Model model) {
 
         if (!password.equals(passwordConfirmation)) {
             addErrorMessage("Password and password confirmation do not match", model);
@@ -224,7 +229,7 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
         }
 
         setLdapServerIntegrationConfiguration(ldapServerIntegrationConfiguration, model);
-        updateLdapServerIntegrationConfiguration(username, password, url, baseDomain, model);
+        updateLdapServerIntegrationConfiguration(username, password, url, baseDomain, numberOfWorkers, model);
 
         return "redirect:/ldap/ldapconfiguration/ldapserverintegrationconfiguration/read/"
                 + getLdapServerIntegrationConfiguration(model).getExternalId();
@@ -233,10 +238,11 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
 
     @Atomic
     public void updateLdapServerIntegrationConfiguration(java.lang.String username, java.lang.String password,
-            java.lang.String url, java.lang.String baseDomain, Model m) {
+            java.lang.String url, java.lang.String baseDomain, Integer numberOfWorkers, Model m) {
         getLdapServerIntegrationConfiguration(m).setUsername(username);
         getLdapServerIntegrationConfiguration(m).setPassword(password);
         getLdapServerIntegrationConfiguration(m).setUrl(url);
         getLdapServerIntegrationConfiguration(m).setBaseDomain(baseDomain);
+        getLdapServerIntegrationConfiguration(m).setNumberOfWorkers(numberOfWorkers);
     }
 }
