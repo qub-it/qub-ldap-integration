@@ -36,13 +36,13 @@ import org.fenixedu.bennu.core.domain.Bennu;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import pt.ist.fenixframework.Atomic;
-import pt.ist.fenixframework.Atomic.TxMode;
-import pt.ist.fenixframework.CallableWithoutException;
-
 import com.qubit.solution.fenixedu.integration.ldap.service.AttributeResolver;
 import com.qubit.solution.fenixedu.integration.ldap.service.LdapIntegration;
 import com.qubit.terra.ldapclient.LdapClient;
+
+import pt.ist.fenixframework.Atomic;
+import pt.ist.fenixframework.Atomic.TxMode;
+import pt.ist.fenixframework.CallableWithoutException;
 
 public class LdapServerIntegrationConfiguration extends LdapServerIntegrationConfiguration_Base {
 
@@ -163,12 +163,14 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
         public Object call() {
             long threadID = Thread.currentThread().getId();
             int totalSize = this.people.size();
+            long startTime = System.currentTimeMillis();
             LOG.info("Starting thread  " + threadID + ". Writting attribute " + attributeName + " for " + totalSize);
             Thread.currentThread().setName(attributeName + "-" + threadID);
             for (Person person : people) {
                 LdapIntegration.writeAtttribute(person, attributeName, attributeResolver.getAttributeValueFor(person));
             }
-            LOG.info("Stopping thread  " + threadID);
+            long endTime = System.currentTimeMillis();
+            LOG.info("Stopping thread  " + threadID + " [took: " + ((endTime - startTime) / 1000) + " seconds]");
             return null;
         }
 
@@ -189,10 +191,12 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
         public Object call() {
             long threadID = Thread.currentThread().getId();
             int totalSize = this.people.size();
+            long startTime = System.currentTimeMillis();
             LOG.info("Starting thread  " + threadID + ". Deleting " + totalSize);
             Thread.currentThread().setName(DeletePersonFromLdapWorker.class.getSimpleName() + "-" + threadID);
             LdapIntegration.deleteUsers(people, configuration);
-            LOG.info("Stopping thread  " + threadID);
+            long endTime = System.currentTimeMillis();
+            LOG.info("Stopping thread  " + threadID + " [took: " + ((endTime - startTime) / 1000) + " seconds]");
             return null;
         }
 
@@ -213,6 +217,7 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
         public Object call() {
             long threadID = Thread.currentThread().getId();
             int totalSize = this.people.size();
+            long startTime = System.currentTimeMillis();
             LOG.info("Starting thread  " + threadID + ". Processing " + totalSize);
             Thread.currentThread().setName(SendPersonToLdapWorker.class.getSimpleName() + "-" + threadID);
 
@@ -230,7 +235,8 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
                     LdapIntegration.createOrUpdatePeopleInLdap(this.people.subList(min, max), this.configuration);
                 }
             }
-            LOG.info("Finished thread " + threadID);
+            long endTime = System.currentTimeMillis();
+            LOG.info("Finished thread " + threadID + " [took: " + ((endTime - startTime) / 1000) + " seconds]");
             return null;
         }
 
@@ -242,14 +248,19 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
     }
 
     public void sendAllUsers() {
-        applyOperationToAllUsers(
-                Bennu.getInstance().getPartysSet().stream().filter(p -> p instanceof Person).map(Person.class::cast)
-                        .collect(Collectors.toList()), SendPersonToLdapWorker.class, 10, false);
+        applyOperationToAllUsers(Bennu.getInstance().getPartysSet().stream().filter(p -> p instanceof Person)
+                .map(Person.class::cast).collect(Collectors.toList()), SendPersonToLdapWorker.class, getNumberOfWorkers(), false);
     }
 
     public void deleteAllUsers() {
-        applyOperationToAllUsers(
-                Bennu.getInstance().getPartysSet().stream().filter(p -> p instanceof Person).map(Person.class::cast)
-                        .collect(Collectors.toList()), DeletePersonFromLdapWorker.class, 10, false);
+        applyOperationToAllUsers(Bennu.getInstance().getPartysSet().stream().filter(p -> p instanceof Person)
+                .map(Person.class::cast).collect(Collectors.toList()), DeletePersonFromLdapWorker.class, getNumberOfWorkers(),
+                false);
+    }
+
+    @Override
+    public Integer getNumberOfWorkers() {
+        Integer numberOfWorkers = super.getNumberOfWorkers();
+        return numberOfWorkers != null ? numberOfWorkers : 10;
     }
 }
