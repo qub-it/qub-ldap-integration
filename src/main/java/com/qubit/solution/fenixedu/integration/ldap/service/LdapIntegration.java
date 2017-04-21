@@ -32,12 +32,15 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
@@ -66,6 +69,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.format.datetime.joda.DateTimeFormatterFactory;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.io.BaseEncoding;
 import com.qubit.solution.fenixedu.integration.ldap.domain.configuration.LdapServerIntegrationConfiguration;
 import com.qubit.terra.ldapclient.AttributesMap;
@@ -196,6 +201,10 @@ public class LdapIntegration {
             }
         }
         return ldapUsername;
+    }
+
+    private static String getCNCommonName(String cn, LdapServerIntegrationConfiguration configuration) {
+        return COMMON_NAME + "=" + cn + "," + configuration.getBaseDomain();
     }
 
     // When refering to an object in ldap we can't only give his CN but also the
@@ -417,6 +426,7 @@ public class LdapIntegration {
                         String personCommonName = getPersonCommonName(person, client, configuration);
                         if (!personCommonName.equals(configuration.getUsername())) {
                             client.deleteContext(personCommonName);
+                            EXISTING_USERNAME_CACHE.invalidate(person.getUsername());
                         }
                     } catch (Throwable t) {
                         t.printStackTrace();
@@ -433,7 +443,7 @@ public class LdapIntegration {
     // position 0 local, position 1 ldap info
     //
 
-    private static Map<String, String[]> retrieveSyncInfo(AttributesMap collectedMap, String[] fields, Person person,
+    private static Map<String, String[]> retrieveSyncInfo(AttributesMap collectedMap, String[] fields, String personCN,
             LdapClient ldapClient, LdapServerIntegrationConfiguration defaultConfiguration) {
         Map<String, String[]> map = new LinkedHashMap<String, String[]>();
 
@@ -445,7 +455,7 @@ public class LdapIntegration {
             map.put(field, values);
         }
 
-        QueryReply query = ldapClient.query(COMMON_NAME + "=" + getCorrectCN(person.getUsername(), ldapClient), fields);
+        QueryReply query = ldapClient.query(COMMON_NAME + "=" + personCN, fields);
         if (query.getNumberOfResults() == 1) {
             QueryReplyElement queryReplyElement = query.getResults().get(0);
             for (String field : fields) {
@@ -460,16 +470,16 @@ public class LdapIntegration {
     }
 
     public static Map<String, String[]> retrieveSyncInformation(Student student) {
-        return retrieveSyncInformation(student, getDefaultConfiguration());
+        return retrieveSyncInformation(student, null, getDefaultConfiguration());
     }
 
-    public static Map<String, String[]> retrieveSyncInformation(Student student,
+    public static Map<String, String[]> retrieveSyncInformation(Student student, String personCN,
             LdapServerIntegrationConfiguration defaultConfiguration) {
         Map<String, String[]> map = null;
         LdapClient client = defaultConfiguration.getClient();
         try {
             if (client.login()) {
-                map = retrieveSyncInformation(student, client, defaultConfiguration);
+                map = retrieveSyncInformation(student, personCN, client, defaultConfiguration);
             }
         } finally {
             client.logout();
@@ -477,24 +487,26 @@ public class LdapIntegration {
         return map;
     }
 
-    private static Map<String, String[]> retrieveSyncInformation(Student student, LdapClient ldapClient,
+    private static Map<String, String[]> retrieveSyncInformation(Student student, String personCN, LdapClient ldapClient,
             LdapServerIntegrationConfiguration defaultConfiguration) {
-
-        return retrieveSyncInfo(collectAttributeMap(student), STUDENT_FIELDS_TO_SYNC, student.getPerson(), ldapClient,
-                defaultConfiguration);
+        if (personCN == null) {
+            personCN = getCorrectCN(student.getPerson().getUsername(), ldapClient);
+        }
+        return retrieveSyncInfo(collectAttributeMap(student), STUDENT_FIELDS_TO_SYNC, personCN, ldapClient, defaultConfiguration);
     }
 
     public static Map<String, String[]> retrieveSyncInformation(Person person) {
-        return retrieveSyncInformation(person, getDefaultConfiguration());
+        return retrieveSyncInformation(person, null, getDefaultConfiguration());
     }
 
-    public static Map<String, String[]> retrieveSyncInformation(Person person, LdapServerIntegrationConfiguration configuration) {
+    public static Map<String, String[]> retrieveSyncInformation(Person person, String personCN,
+            LdapServerIntegrationConfiguration configuration) {
 
         Map<String, String[]> map = null;
         LdapClient client = configuration.getClient();
         try {
             if (client.login()) {
-                map = retrieveSyncInformation(person, client, configuration);
+                map = retrieveSyncInformation(person, personCN, client, configuration);
             }
         } finally {
             client.logout();
@@ -502,9 +514,12 @@ public class LdapIntegration {
         return map;
     }
 
-    private static Map<String, String[]> retrieveSyncInformation(Person person, LdapClient ldapClient,
+    private static Map<String, String[]> retrieveSyncInformation(Person person, String personCN, LdapClient ldapClient,
             LdapServerIntegrationConfiguration defaultConfiguration) {
-        return retrieveSyncInfo(collectAttributeMap(person), PERSON_FIELDS_TO_SYNC, person, ldapClient, defaultConfiguration);
+        if (personCN == null) {
+            personCN = getCorrectCN(person.getUsername(), ldapClient);
+        }
+        return retrieveSyncInfo(collectAttributeMap(person), PERSON_FIELDS_TO_SYNC, personCN, ldapClient, defaultConfiguration);
     }
 
     private static StringBuilder concatenateValues(List<String> list) {
@@ -567,7 +582,7 @@ public class LdapIntegration {
         boolean isUpdated = false;
         try {
             if (client.login()) {
-                isUpdated = isUpdateNeeded(person, client, configuration);
+                isUpdated = isUpdateNeeded(person, null, client, configuration);
             }
         } finally {
             client.logout();
@@ -575,11 +590,12 @@ public class LdapIntegration {
         return isUpdated;
     }
 
-    private static boolean isUpdateNeeded(Person person, LdapClient client, LdapServerIntegrationConfiguration configuration) {
-        Map<String, String[]> retrieveSyncInformation = retrieveSyncInformation(person, client, configuration);
+    private static boolean isUpdateNeeded(Person person, String personCN, LdapClient client,
+            LdapServerIntegrationConfiguration configuration) {
+        Map<String, String[]> retrieveSyncInformation = retrieveSyncInformation(person, personCN, client, configuration);
         boolean isPersonUpdated = isSynched(retrieveSyncInformation);
         boolean isStudentUpdated = isPersonUpdated && (person.getStudent() == null
-                || isSynched(retrieveSyncInformation(person.getStudent(), client, configuration)));
+                || isSynched(retrieveSyncInformation(person.getStudent(), personCN, client, configuration)));
 
         return !isPersonUpdated || !isStudentUpdated;
     }
@@ -635,23 +651,31 @@ public class LdapIntegration {
         return result;
     }
 
+    private final static Cache<String, Boolean> EXISTING_USERNAME_CACHE =
+            CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.HOURS).maximumSize(10000).build();
+
     private static boolean isPersonAvailableInLdap(Person person, LdapClient client,
             LdapServerIntegrationConfiguration defaultConfiguration) {
         boolean isAvailable = false;
+
         try {
             String usernameToSearch = person.getUsername();
+            isAvailable = EXISTING_USERNAME_CACHE.getIfPresent(usernameToSearch) != null;
 
-            QueryReply query = client.query(
-                    "(|(" + COMMON_NAME + "=" + usernameToSearch + ")(" + UL_FENIXUSER + "=" + usernameToSearch + "))",
-                    new String[] { COMMON_NAME, UL_FENIXUSER });
-            if (query.getNumberOfResults() > 0) {
-                isAvailable = true;
-            }
-            if (query.getNumberOfResults() > 1) {
-                logger.debug("Found duplicate entry for user: " + person.getUsername());
-            }
-            if (query.getNumberOfResults() == 2) {
-                tryToFix(query, usernameToSearch);
+            if (!isAvailable) {
+                QueryReply query = client.query(
+                        "(|(" + COMMON_NAME + "=" + usernameToSearch + ")(" + UL_FENIXUSER + "=" + usernameToSearch + "))",
+                        new String[] { COMMON_NAME, UL_FENIXUSER });
+                if (query.getNumberOfResults() > 0) {
+                    isAvailable = true;
+                    EXISTING_USERNAME_CACHE.put(usernameToSearch, true);
+                }
+                if (query.getNumberOfResults() > 1) {
+                    logger.debug("Found duplicate entry for user: " + person.getUsername());
+                }
+                if (query.getNumberOfResults() == 2) {
+                    tryToFix(query, usernameToSearch);
+                }
             }
         } catch (Throwable t) {
             t.printStackTrace();
@@ -755,7 +779,8 @@ public class LdapIntegration {
             if (login) {
 
                 for (Person person : people) {
-                    String personCommonName = getPersonCommonName(person, client, configuration);
+                    String personCN = getCorrectCN(person.getUsername(), client);
+                    String personCommonName = getCNCommonName(personCN, configuration);
                     // This is the admin username we do not want to sync that
                     // one.
                     // 10 September 2015 - Paulo Abrantes
@@ -779,10 +804,10 @@ public class LdapIntegration {
                         } catch (Throwable t) {
                             t.printStackTrace();
                         }
-                    } else if (isUpdateNeeded(person, client, configuration)) {
+                    } else if (isUpdateNeeded(person, personCN, client, configuration)) {
                         List<String> objectClasses = new ArrayList<String>(Arrays.asList(OBJECT_CLASSES_TO_ADD));
-                        QueryReply query = client.query("(&(" + COMMON_NAME + "=" + getCorrectCN(person.getUsername(), client)
-                                + ")(objectClass=" + STUDENT_CLASS_PREFIX + getSchoolCode() + "))", new String[] { COMMON_NAME });
+                        QueryReply query = client.query("(&(" + COMMON_NAME + "=" + personCN + ")(objectClass="
+                                + STUDENT_CLASS_PREFIX + getSchoolCode() + "))", new String[] { COMMON_NAME });
 
                         if (query.getNumberOfResults() == 1) {
                             // The person is a student so we have to add this
