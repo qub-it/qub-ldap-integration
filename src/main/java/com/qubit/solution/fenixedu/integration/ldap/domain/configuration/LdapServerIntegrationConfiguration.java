@@ -27,6 +27,7 @@
 package com.qubit.solution.fenixedu.integration.ldap.domain.configuration;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,6 +44,7 @@ import com.qubit.terra.ldapclient.LdapClient;
 import pt.ist.fenixframework.Atomic;
 import pt.ist.fenixframework.Atomic.TxMode;
 import pt.ist.fenixframework.CallableWithoutException;
+import pt.ist.fenixframework.FenixFramework;
 
 public class LdapServerIntegrationConfiguration extends LdapServerIntegrationConfiguration_Base {
 
@@ -223,7 +225,7 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
 
             if (totalSize < 1000) {
                 LOG.info("Less than 1000 elements sending a single batch");
-                LdapIntegration.createOrUpdatePeopleInLdap(this.people, this.configuration);
+                send(people);
             } else {
                 int pageSize = 1000;
                 int pages = (totalSize / pageSize) + (totalSize % 1000 > 0 ? 1 : 0);
@@ -232,12 +234,27 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
                     int min = pageSize * i;
                     int max = Math.min(min + pageSize, totalSize);
                     LOG.info("Sending page : " + i + " out of " + pages);
-                    LdapIntegration.createOrUpdatePeopleInLdap(this.people.subList(min, max), this.configuration);
+                    // Forcing that each batch send is a thread of it its own, so it's a diferent Tx. Otherwise we might create
+                    // very large transactions that affects system performance. 
+                    //
+                    // 28 April 2017 - Paulo Abrantes
+                    Thread thread = new Thread(() -> send(this.people.subList(min, max)));
+                    thread.start();
+                    try {
+                        thread.join();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
             long endTime = System.currentTimeMillis();
             LOG.info("Finished thread " + threadID + " [took: " + ((endTime - startTime) / 1000) + " seconds]");
             return null;
+        }
+
+        @Atomic(mode = TxMode.READ)
+        private void send(Collection<Person> people) {
+            LdapIntegration.createOrUpdatePeopleInLdap(people, this.configuration);
         }
 
         @Override
