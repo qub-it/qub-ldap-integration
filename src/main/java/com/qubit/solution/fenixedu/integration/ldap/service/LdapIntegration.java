@@ -59,6 +59,7 @@ import org.fenixedu.academic.domain.time.calendarStructure.AcademicInterval;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.bennu.core.domain.UsernameHack;
 import org.fenixedu.bennu.core.groups.DynamicGroup;
+import org.fenixedu.ulisboa.specifications.ULisboaConfiguration;
 import org.fenixedu.ulisboa.specifications.domain.idcards.CgdCard;
 import org.fenixedu.ulisboa.specifications.domain.student.ActiveStudentOverride;
 import org.fenixedu.ulisboa.specifications.service.StudentActive;
@@ -104,7 +105,7 @@ public class LdapIntegration {
     private static final String CO_ATTRIBUTE = "co";
     private static final String UL_SEX_ATTRIBUTE = "ULSex";
     private static final String LAST_NAME_ATTRIBUTE = "sn";
-    private static final String GIVEN_NAME_ATTRIBUTE = "givenName";
+    private static final String GIVEN_NAME_ATTRIBUTE = ULisboaConfiguration.getConfiguration().getUseCustomGivenNames() ? "ULGivenName" : "givenName";
     private static final String FULL_NAME_ATTRIBUTE = "FullName";
     private static final String UL_MIFARE_ATTRIBUTE = "ULMifare";
     private static final String UL_ALUMNI_ATTRIBUTE = "ULAlumni";
