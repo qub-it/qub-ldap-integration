@@ -32,14 +32,12 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -105,7 +103,8 @@ public class LdapIntegration {
     private static final String CO_ATTRIBUTE = "co";
     private static final String UL_SEX_ATTRIBUTE = "ULSex";
     private static final String LAST_NAME_ATTRIBUTE = "sn";
-    private static final String GIVEN_NAME_ATTRIBUTE = ULisboaConfiguration.getConfiguration().getUseCustomGivenNames() ? "ULGivenName" : "givenName";
+    private static final String GIVEN_NAME_ATTRIBUTE =
+            ULisboaConfiguration.getConfiguration().getUseCustomGivenNames() ? "ULGivenName" : "givenName";
     private static final String FULL_NAME_ATTRIBUTE = "FullName";
     private static final String UL_MIFARE_ATTRIBUTE = "ULMifare";
     private static final String UL_ALUMNI_ATTRIBUTE = "ULAlumni";
@@ -121,9 +120,8 @@ public class LdapIntegration {
     private static final String UL_FENIXUSER = "ULFenixUser";
 
     // Object classes from Ldap
-    private static String[] OBJECT_CLASSES_TO_ADD = { "person", "ULAuxUser", "ULFenixUser" };
+    private static String[] OBJECT_CLASSES_TO_ADD = { "person", "ULAuxUser", "ULAuxFac" + getSchoolCode(), "ULFenixUser" };
     private static String[] OBJECT_CLASSES_TO_ADD_TEMP_USER = { "person", "ULFenixUser" };
-    private static final String STUDENT_CLASS_PREFIX = "ULAuxFac";
 
     // All the fields in this variable are from ULAuxUser LDAP class.
     //
@@ -720,19 +718,8 @@ public class LdapIntegration {
         if (client.login()) {
             try {
                 AttributesMap attributesMap = collectAttributeMap(student);
-                List<String> objectClasses = new ArrayList<String>();
-                String correctCN = getCorrectCN(person.getUsername(), client);
-                QueryReply query = client.query(
-                        "(&(" + COMMON_NAME + "=" + correctCN + ")(objectClass=" + STUDENT_CLASS_PREFIX + getSchoolCode() + "))",
-                        new String[] { COMMON_NAME });
-
-                if (query.getNumberOfResults() == 1) {
-                    client.replaceInExistingContext(getPersonCommonName(person, client, configuration), objectClasses,
-                            attributesMap);
-                } else {
-                    objectClasses.add(STUDENT_CLASS_PREFIX + getSchoolCode());
-                    client.addToExistingContext(getPersonCommonName(person, client, configuration), objectClasses, attributesMap);
-                }
+                client.addToExistingContext(getPersonCommonName(person, client, configuration),
+                        Arrays.asList(OBJECT_CLASSES_TO_ADD), attributesMap);
                 ableToUpdateStudent = true;
             } finally {
                 client.logout();
@@ -790,9 +777,6 @@ public class LdapIntegration {
                     }
                     if (!isPersonAvailableInLdap(person, client, configuration)) {
                         List<String> objectClasses = new ArrayList<String>(Arrays.asList(OBJECT_CLASSES_TO_ADD));
-                        if (person.getStudent() != null) {
-                            objectClasses.add(STUDENT_CLASS_PREFIX + getSchoolCode());
-                        }
                         try {
                             AttributesMap collectAttributeMap = collectAttributeMap(person);
                             // Only when creating the person we want to add this
@@ -807,27 +791,6 @@ public class LdapIntegration {
                         }
                     } else if (isUpdateNeeded(person, personCN, client, configuration)) {
                         List<String> objectClasses = new ArrayList<String>(Arrays.asList(OBJECT_CLASSES_TO_ADD));
-                        QueryReply query = client.query("(&(" + COMMON_NAME + "=" + personCN + ")(objectClass="
-                                + STUDENT_CLASS_PREFIX + getSchoolCode() + "))", new String[] { COMMON_NAME });
-
-                        if (query.getNumberOfResults() == 1) {
-                            // The person is a student so we have to add this
-                            // class as well
-                            objectClasses.add(STUDENT_CLASS_PREFIX + getSchoolCode());
-                        } else if (person.getStudent() != null) {
-                            // In the creation we are considering that a person
-                            // with a student in fenix will also have the
-                            // student class in LDAP.
-                            // This must also be considered here since further
-                            // logic (e.g in collecStudentAttributes)
-                            // Will add student attributes to the LDAP message
-                            // based on this condition
-                            // PS: This condition could be tested before the
-                            // ldap query improving performance, but let's keep
-                            // it here temporarly to avoid risk
-                            // Nuno Pinheiro 03/08/2015
-                            objectClasses.add(STUDENT_CLASS_PREFIX + getSchoolCode());
-                        }
                         try {
                             client.replaceInExistingContext(personCommonName, objectClasses, collectAttributeMap(person));
                             ableToSend = true;
