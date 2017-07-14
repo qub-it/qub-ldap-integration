@@ -202,6 +202,23 @@ public class LdapIntegration {
         return ldapUsername;
     }
 
+    public static boolean isPersonAligned(Person person) {
+        return isPersonAligned(person, getDefaultConfiguration());
+    }
+
+    public static boolean isPersonAligned(Person person, LdapServerIntegrationConfiguration configuration) {
+        LdapClient client = configuration.getClient();
+        try {
+            if (client.login()) {
+                String correctCN = getCorrectCN(person.getUsername(), client);
+                return correctCN != null && !correctCN.startsWith("bennu");
+            }
+        } finally {
+            client.logout();
+        }
+        return false;
+    }
+
     private static String getCNCommonName(String cn, LdapServerIntegrationConfiguration configuration) {
         return COMMON_NAME + "=" + cn + "," + configuration.getBaseDomain();
     }
@@ -1003,7 +1020,8 @@ public class LdapIntegration {
 
     public static boolean changePassword(String username, String password, String salt,
             LdapServerIntegrationConfiguration configuration) {
-        String generateLdapPassword = generateLdapPassword(password, salt);
+        String generateLdapPassword =
+                ULisboaConfiguration.getConfiguration().getSendHashedPassword() ? generateLdapPassword(password, salt) : password;
         AttributesMap attributesMap = new AttributesMap();
         attributesMap.add(USER_PASSWORD, generateLdapPassword);
 
