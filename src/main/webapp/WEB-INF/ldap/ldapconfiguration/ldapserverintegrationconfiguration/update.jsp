@@ -86,6 +86,19 @@
 <form method="post" class="form-horizontal">
 	<div class="panel panel-default">
 		<div class="panel-body">
+					<div class="form-group row">
+				<div class="col-sm-2 control-label">
+					<spring:message
+						code="label.LdapServerIntegrationConfiguration.serverID" />
+				</div>
+
+				<div class="col-sm-10">
+					<input id="ldapServerIntegrationConfiguration_serverid"
+						class="form-control" type="text" name="serverid"
+						value='<c:out value='${not empty param.serverid ? param.serverid : ldapServerIntegrationConfiguration.serverID}'/>' />
+				</div>
+			</div>
+		
 			<div class="form-group row">
 				<div class="col-sm-2 control-label">
 					<spring:message

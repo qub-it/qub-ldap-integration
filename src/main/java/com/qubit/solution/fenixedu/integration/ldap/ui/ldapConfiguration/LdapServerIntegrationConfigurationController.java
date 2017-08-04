@@ -216,6 +216,7 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
 
     @RequestMapping(value = "/update/{oid}", method = RequestMethod.POST)
     public String update(@PathVariable("oid") LdapServerIntegrationConfiguration ldapServerIntegrationConfiguration,
+            @RequestParam(value = "serverid", required = false) java.lang.String serverID,
             @RequestParam(value = "username", required = false) java.lang.String username,
             @RequestParam(value = "password", required = false) java.lang.String password,
             @RequestParam(value = "passwordConfirmation", required = false) java.lang.String passwordConfirmation,
@@ -229,7 +230,7 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
         }
 
         setLdapServerIntegrationConfiguration(ldapServerIntegrationConfiguration, model);
-        updateLdapServerIntegrationConfiguration(username, password, url, baseDomain, numberOfWorkers, model);
+        updateLdapServerIntegrationConfiguration(serverID, username, password, url, baseDomain, numberOfWorkers, model);
 
         return "redirect:/ldap/ldapconfiguration/ldapserverintegrationconfiguration/read/"
                 + getLdapServerIntegrationConfiguration(model).getExternalId();
@@ -237,8 +238,9 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
     }
 
     @Atomic
-    public void updateLdapServerIntegrationConfiguration(java.lang.String username, java.lang.String password,
-            java.lang.String url, java.lang.String baseDomain, Integer numberOfWorkers, Model m) {
+    public void updateLdapServerIntegrationConfiguration(java.lang.String serverID, java.lang.String username,
+            java.lang.String password, java.lang.String url, java.lang.String baseDomain, Integer numberOfWorkers, Model m) {
+        getLdapServerIntegrationConfiguration(m).setServerID(serverID);
         getLdapServerIntegrationConfiguration(m).setUsername(username);
         getLdapServerIntegrationConfiguration(m).setPassword(password);
         getLdapServerIntegrationConfiguration(m).setUrl(url);
