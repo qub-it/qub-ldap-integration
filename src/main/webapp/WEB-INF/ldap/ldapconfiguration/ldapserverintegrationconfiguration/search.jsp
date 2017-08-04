@@ -134,7 +134,7 @@ ${portal.toolkit()}
 	}
 	
 	function addModal(confirmationMessage, formID) {
-		$("body").append('<div class="modal fade" id="confirmModal-' + formID + '"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title"><spring:message code="label.confirmation" /></h4></div><div class="modal-body"><p>' + confirmationMessage + '</p></div><div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal"><spring:message code="label.close" /></button><a class="btn btn-danger" onClick="javascript:$("#' + formID + '").submit();"><spring:message code="label.delete" /></a></div></div></div></div>');
+		$("body").append('<div class="modal fade" id="confirmModal-' + formID + '"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title"><spring:message code="label.confirmation" /></h4></div><div class="modal-body"><p>' + confirmationMessage + '</p></div><div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal"><spring:message code="label.close" /></button><a class="btn btn-danger" onClick="javascript:$(\'#' + formID + '\').submit();"><spring:message code="label.delete" /></a></div></div></div></div>');
 	}
 
 	function submitOptions(tableID, formID, attributeName, confirmationMessage) {
