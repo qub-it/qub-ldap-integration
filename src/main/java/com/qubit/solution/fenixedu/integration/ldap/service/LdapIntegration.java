@@ -1065,7 +1065,8 @@ public class LdapIntegration {
 
     public static boolean createUser(String username, String password, String salt,
             LdapServerIntegrationConfiguration configuration) {
-        String generateLdapPassword = generateLdapPassword(password, salt);
+        String generateLdapPassword =
+                ULisboaConfiguration.getConfiguration().getSendHashedPassword() ? generateLdapPassword(password, salt) : password;
         AttributesMap attributesMap = new AttributesMap();
         attributesMap.add(LAST_NAME_ATTRIBUTE, username);
         attributesMap.add(UL_FENIXUSER, username);
