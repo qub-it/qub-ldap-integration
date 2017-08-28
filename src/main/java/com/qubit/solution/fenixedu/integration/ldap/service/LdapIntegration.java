@@ -565,9 +565,20 @@ public class LdapIntegration {
         return ableToSend;
     }
 
+    public static boolean deleteUser(String username) {
+        return deleteUser(username, getDefaultConfiguration());
+    }
+
     public static boolean deleteUser(String username, LdapServerIntegrationConfiguration configuration) {
         LdapClient client = configuration.getClient();
-        return deleteCommonName(getObjectCommonName(username, client, configuration), configuration);
+        try {
+            if (client.login()) {
+                return deleteCommonName(getObjectCommonName(username, client, configuration), configuration);
+            }
+            return false;
+        } finally {
+            client.logout();
+        }
     }
 
     private static boolean isSynched(Map<String, String[]> syncInformation) {
@@ -1057,6 +1068,25 @@ public class LdapIntegration {
             t.printStackTrace();
         }
         return ableToRename;
+    }
+
+    public static boolean existsUser(String username, LdapServerIntegrationConfiguration configuration) {
+        LdapClient client = configuration.getClient();
+        try {
+            if (client.login()) {
+                QueryReply query = client.query("(" + COMMON_NAME + "=" + username + ")", new String[] { COMMON_NAME });
+                return query.getNumberOfResults() > 0;
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        } finally {
+            client.logout();
+        }
+        return false;
+    }
+
+    public static boolean existsUser(String username) {
+        return existsUser(username, getDefaultConfiguration());
     }
 
     public static boolean createUser(String username, String password, String salt) {
