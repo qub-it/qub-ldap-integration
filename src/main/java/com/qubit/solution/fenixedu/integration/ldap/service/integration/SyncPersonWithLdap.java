@@ -1,6 +1,6 @@
 /**
- * This file was created by Quorum Born IT <http://www.qub-it.com/> and its 
- * copyright terms are bind to the legal agreement regulating the FenixEdu@ULisboa 
+ * This file was created by Quorum Born IT <http://www.qub-it.com/> and its
+ * copyright terms are bind to the legal agreement regulating the FenixEdu@ULisboa
  * software development project between Quorum Born IT and Serviços Partilhados da
  * Universidade de Lisboa:
  *  - Copyright © 2015 Quorum Born IT (until any Go-Live phase)
@@ -8,7 +8,7 @@
  *
  * Contributors: paulo.abrantes@qub-it.com
  *
- * 
+ *
  * This file is part of FenixEdu fenixedu-ulisboa-ldapIntegration.
  *
  * FenixEdu fenixedu-ulisboa-ldapIntegration is free software: you can redistribute it and/or modify
@@ -30,46 +30,54 @@ import org.fenixedu.academic.domain.Person;
 import org.fenixedu.academic.domain.student.Student;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.ulisboa.specifications.domain.student.access.importation.external.SyncPersonWithExternalServices;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.qubit.solution.fenixedu.integration.ldap.service.LdapIntegration;
 
 public class SyncPersonWithLdap implements SyncPersonWithExternalServices {
 
     private static int retriesOnFail = 3;
+    public static final Logger LOGGER = LoggerFactory.getLogger(SyncPersonWithLdap.class);
 
     @Override
-    public boolean syncPersonToExternal(Person person) {
+    public boolean syncPersonToExternal(final Person person) {
         int counter = 0;
         boolean ableToSend = false;
         while (!ableToSend && counter++ < retriesOnFail) {
-            ableToSend =
-                    Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
-                            && LdapIntegration.updatePersonInLdap(person);
+            ableToSend = Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
+                    && LdapIntegration.updatePersonInLdap(person);
         }
         return ableToSend;
     }
 
     @Override
-    public boolean syncPersonFromExternal(Person person) {
+    public boolean syncPersonFromExternal(final Person person) {
         int counter = 0;
         boolean ableToSend = false;
         while (!ableToSend && counter++ < retriesOnFail) {
-            ableToSend =
-                    Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
-                            && LdapIntegration.updatePersonUsingLdap(person);
+            ableToSend = Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
+                    && LdapIntegration.updatePersonUsingLdap(person);
         }
         return ableToSend;
     }
 
     @Override
-    public boolean syncStudentToExternal(Student student) {
+    public boolean syncStudentToExternal(final Student student) {
         int counter = 0;
         boolean ableToSend = false;
         while (!ableToSend && counter++ < retriesOnFail) {
-            ableToSend =
-                    Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
-                            && LdapIntegration.updatePersonInLdap(student.getPerson())
-                            && LdapIntegration.updateStudentStatus(student);
+            try {
+                ableToSend = Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null
+                        && LdapIntegration.updatePersonInLdap(student.getPerson());
+            } catch (Throwable t) {
+                LOGGER.error("Problems sending student's info to LDAP", t);
+            }
+            try {
+                LdapIntegration.updateStudentStatus(student);
+            } catch (Throwable t) {
+                LOGGER.error("Problems sending student's course to LDAP", t);
+            }
         }
         return ableToSend;
     }
