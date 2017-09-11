@@ -256,9 +256,9 @@ public class LdapIntegration {
             List<String> courses = new ArrayList<String>();
             for (Registration registration : student.getActiveRegistrations()) {
                 try {
-                courses.add(registration.getDegreeCurricularPlanName() + " " + registration.getDegreeType().getName() + " "
-                        + registration.getDegreeName());
-                }catch(java.lang.Throwable t) {
+                    courses.add(registration.getDegreeCurricularPlanName() + " " + registration.getDegreeType().getName() + " "
+                            + registration.getDegreeName());
+                } catch (java.lang.Throwable t) {
                     courses.add("Error retrieving course");
                 }
             }
@@ -750,7 +750,7 @@ public class LdapIntegration {
         if (client.login()) {
             try {
                 AttributesMap attributesMap = collectAttributeMap(student);
-                client.addToExistingContext(getPersonCommonName(person, client, configuration),
+                client.replaceInExistingContext(getPersonCommonName(person, client, configuration),
                         Arrays.asList(OBJECT_CLASSES_TO_ADD), attributesMap);
                 ableToUpdateStudent = true;
             } finally {
