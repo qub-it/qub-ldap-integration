@@ -7,3 +7,4 @@ and an integration toolkit to send information from a user from FenixEDU to ldap
 LDAP into a Person in FenixEDU system.
 
 The ldap schema was defined by ULisboa.
+
