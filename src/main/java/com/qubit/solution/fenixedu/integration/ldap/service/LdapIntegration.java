@@ -1,6 +1,6 @@
 /**
- * This file was created by Quorum Born IT <http://www.qub-it.com/> and its 
- * copyright terms are bind to the legal agreement regulating the FenixEdu@ULisboa 
+ * This file was created by Quorum Born IT <http://www.qub-it.com/> and its
+ * copyright terms are bind to the legal agreement regulating the FenixEdu@ULisboa
  * software development project between Quorum Born IT and Serviços Partilhados da
  * Universidade de Lisboa:
  *  - Copyright © 2015 Quorum Born IT (until any Go-Live phase)
@@ -8,7 +8,7 @@
  *
  * Contributors: paulo.abrantes@qub-it.com
  *
- * 
+ *
  * This file is part of FenixEdu fenixedu-ulisboa-ldapIntegration.
  *
  * FenixEdu fenixedu-ulisboa-ldapIntegration is free software: you can redistribute it and/or modify
@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -57,6 +58,7 @@ import org.fenixedu.academic.domain.time.calendarStructure.AcademicInterval;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.bennu.core.domain.UsernameHack;
 import org.fenixedu.bennu.core.groups.DynamicGroup;
+import org.fenixedu.commons.i18n.LocalizedString;
 import org.fenixedu.ulisboa.specifications.ULisboaConfiguration;
 import org.fenixedu.ulisboa.specifications.domain.idcards.CgdCard;
 import org.fenixedu.ulisboa.specifications.domain.student.ActiveStudentOverride;
@@ -180,7 +182,7 @@ public class LdapIntegration {
     // the username accordingly.
     //
     // 30 July 2015 - Paulo Abrantes
-    private static String getCorrectCN(String username, LdapClient client) {
+    private static String getCorrectCN(final String username, final LdapClient client) {
         String ldapUsername = username;
         String[] replyAttributes = new String[] { COMMON_NAME };
 
@@ -202,11 +204,11 @@ public class LdapIntegration {
         return ldapUsername;
     }
 
-    public static boolean isPersonAligned(Person person) {
+    public static boolean isPersonAligned(final Person person) {
         return isPersonAligned(person, getDefaultConfiguration());
     }
 
-    public static boolean isPersonAligned(Person person, LdapServerIntegrationConfiguration configuration) {
+    public static boolean isPersonAligned(final Person person, final LdapServerIntegrationConfiguration configuration) {
         LdapClient client = configuration.getClient();
         try {
             if (client.login()) {
@@ -219,7 +221,7 @@ public class LdapIntegration {
         return false;
     }
 
-    private static String getCNCommonName(String cn, LdapServerIntegrationConfiguration configuration) {
+    private static String getCNCommonName(final String cn, final LdapServerIntegrationConfiguration configuration) {
         return COMMON_NAME + "=" + cn + "," + configuration.getBaseDomain();
     }
 
@@ -227,13 +229,13 @@ public class LdapIntegration {
     // domain. Both the
     // methods below
     //
-    private static String getObjectCommonName(String username, LdapClient client,
-            LdapServerIntegrationConfiguration configuration) {
+    private static String getObjectCommonName(final String username, final LdapClient client,
+            final LdapServerIntegrationConfiguration configuration) {
         return COMMON_NAME + "=" + getCorrectCN(username, client) + "," + configuration.getBaseDomain();
     }
 
-    private static String getPersonCommonName(Person person, LdapClient client,
-            LdapServerIntegrationConfiguration configuration) {
+    private static String getPersonCommonName(final Person person, final LdapClient client,
+            final LdapServerIntegrationConfiguration configuration) {
         return getObjectCommonName(person.getUsername(), client, configuration);
     }
 
@@ -243,7 +245,7 @@ public class LdapIntegration {
     // singleshot.
     //
     // 30 July 2015 - Paulo Abrantes
-    private static void collecStudentAttributes(Student student, AttributesMap attributesMap) {
+    private static void collecStudentAttributes(final Student student, final AttributesMap attributesMap) {
         Person person = student.getPerson();
         ActiveStudentOverride overrideFor = ActiveStudentOverride.getOverrideFor(person);
         String studentNumber = String.valueOf(student.getNumber());
@@ -253,7 +255,7 @@ public class LdapIntegration {
 
         attributesMap.add(UL_STUDENT_CODE + getSchoolCode(), studentNumber);
         if (isStudent(student.getPerson())) {
-            List<String> courses = new ArrayList<String>();
+            List<String> courses = new ArrayList<>();
             for (Registration registration : student.getActiveRegistrations()) {
                 try {
                     courses.add(registration.getDegreeCurricularPlanName() + " " + registration.getDegreeType().getName() + " "
@@ -269,14 +271,14 @@ public class LdapIntegration {
 
     // Collects data from a student, these are fields from ULAUXFac<School> ldap
     // class
-    private static AttributesMap collectAttributeMap(Student student) {
+    private static AttributesMap collectAttributeMap(final Student student) {
         AttributesMap attributesMap = new AttributesMap();
         collecStudentAttributes(student, attributesMap);
         return attributesMap;
     }
 
     // Collects data from a person, these are fields from ULAuxUser ldap class
-    private static AttributesMap collectAttributeMap(Person person) {
+    private static AttributesMap collectAttributeMap(final Person person) {
         String schooldCode = getSchoolCode();
 
         AttributesMap attributesMap = new AttributesMap();
@@ -363,19 +365,19 @@ public class LdapIntegration {
         return attributesMap;
     }
 
-    private static boolean isAlumni(Person person) {
+    private static boolean isAlumni(final Person person) {
         return !isStudent(person) && person.getStudent() != null;
     }
 
-    private static boolean isStudent(Person person) {
+    private static boolean isStudent(final Person person) {
         return StudentActive.isActiveStudent(person.getStudent());
     }
 
-    private static boolean isTeacher(Person person) {
+    private static boolean isTeacher(final Person person) {
         ExecutionYear readCurrentExecutionYear = ExecutionYear.readCurrentExecutionYear();
         ExecutionYear previousExecutionYear = readCurrentExecutionYear.getPreviousExecutionYear();
 
-        List<AcademicInterval> intervals = new ArrayList<AcademicInterval>();
+        List<AcademicInterval> intervals = new ArrayList<>();
         intervals.add(readCurrentExecutionYear.getAcademicInterval());
         intervals.add(previousExecutionYear.getAcademicInterval());
         intervals.addAll(readCurrentExecutionYear.getExecutionPeriodsSet().stream().map(ExecutionSemester::getAcademicInterval)
@@ -388,15 +390,15 @@ public class LdapIntegration {
                 .collect(Collectors.toList()).isEmpty();
     }
 
-    private static boolean isEmployee(Person person) {
+    private static boolean isEmployee(final Person person) {
         return DynamicGroup.get("employees").isMember(person.getUser());
     }
 
-    public static void resetUsername(Person person) {
+    public static void resetUsername(final Person person) {
         resetUsername(person, getDefaultConfiguration());
     }
 
-    public static void resetUsername(Person person, LdapServerIntegrationConfiguration configuration) {
+    public static void resetUsername(final Person person, final LdapServerIntegrationConfiguration configuration) {
         LdapClient ldapClient = configuration.getClient();
         try {
             if (ldapClient.login()) {
@@ -414,7 +416,7 @@ public class LdapIntegration {
     }
 
     @Atomic
-    private static void changeUsername(String username, String originalFenixUsername) {
+    private static void changeUsername(final String username, final String originalFenixUsername) {
         UsernameHack.changeUsername(username, originalFenixUsername);
     }
 
@@ -427,15 +429,15 @@ public class LdapIntegration {
         return defaultLdapServerIntegrationConfiguration;
     }
 
-    public static boolean deleteUser(Person person) {
+    public static boolean deleteUser(final Person person) {
         return deleteUsers(Collections.singletonList(person), getDefaultConfiguration());
     }
 
-    public static boolean deleteUsers(Collection<Person> people) {
+    public static boolean deleteUsers(final Collection<Person> people) {
         return deleteUsers(people, getDefaultConfiguration());
     }
 
-    public static boolean deleteUsers(Collection<Person> people, LdapServerIntegrationConfiguration configuration) {
+    public static boolean deleteUsers(final Collection<Person> people, final LdapServerIntegrationConfiguration configuration) {
         boolean ableToSend = false;
         LdapClient client = configuration.getClient();
         try {
@@ -463,9 +465,9 @@ public class LdapIntegration {
     // position 0 local, position 1 ldap info
     //
 
-    private static Map<String, String[]> retrieveSyncInfo(AttributesMap collectedMap, String[] fields, String personCN,
-            LdapClient ldapClient, LdapServerIntegrationConfiguration defaultConfiguration) {
-        Map<String, String[]> map = new LinkedHashMap<String, String[]>();
+    private static Map<String, String[]> retrieveSyncInfo(final AttributesMap collectedMap, final String[] fields,
+            final String personCN, final LdapClient ldapClient, final LdapServerIntegrationConfiguration defaultConfiguration) {
+        Map<String, String[]> map = new LinkedHashMap<>();
 
         for (String field : fields) {
             String[] values = new String[2];
@@ -489,12 +491,12 @@ public class LdapIntegration {
         return map;
     }
 
-    public static Map<String, String[]> retrieveSyncInformation(Student student) {
+    public static Map<String, String[]> retrieveSyncInformation(final Student student) {
         return retrieveSyncInformation(student, null, getDefaultConfiguration());
     }
 
-    public static Map<String, String[]> retrieveSyncInformation(Student student, String personCN,
-            LdapServerIntegrationConfiguration defaultConfiguration) {
+    public static Map<String, String[]> retrieveSyncInformation(final Student student, final String personCN,
+            final LdapServerIntegrationConfiguration defaultConfiguration) {
         Map<String, String[]> map = null;
         LdapClient client = defaultConfiguration.getClient();
         try {
@@ -507,20 +509,20 @@ public class LdapIntegration {
         return map;
     }
 
-    private static Map<String, String[]> retrieveSyncInformation(Student student, String personCN, LdapClient ldapClient,
-            LdapServerIntegrationConfiguration defaultConfiguration) {
+    private static Map<String, String[]> retrieveSyncInformation(final Student student, String personCN,
+            final LdapClient ldapClient, final LdapServerIntegrationConfiguration defaultConfiguration) {
         if (personCN == null) {
             personCN = getCorrectCN(student.getPerson().getUsername(), ldapClient);
         }
         return retrieveSyncInfo(collectAttributeMap(student), STUDENT_FIELDS_TO_SYNC, personCN, ldapClient, defaultConfiguration);
     }
 
-    public static Map<String, String[]> retrieveSyncInformation(Person person) {
+    public static Map<String, String[]> retrieveSyncInformation(final Person person) {
         return retrieveSyncInformation(person, null, getDefaultConfiguration());
     }
 
-    public static Map<String, String[]> retrieveSyncInformation(Person person, String personCN,
-            LdapServerIntegrationConfiguration configuration) {
+    public static Map<String, String[]> retrieveSyncInformation(final Person person, final String personCN,
+            final LdapServerIntegrationConfiguration configuration) {
 
         Map<String, String[]> map = null;
         LdapClient client = configuration.getClient();
@@ -534,15 +536,15 @@ public class LdapIntegration {
         return map;
     }
 
-    private static Map<String, String[]> retrieveSyncInformation(Person person, String personCN, LdapClient ldapClient,
-            LdapServerIntegrationConfiguration defaultConfiguration) {
+    private static Map<String, String[]> retrieveSyncInformation(final Person person, String personCN,
+            final LdapClient ldapClient, final LdapServerIntegrationConfiguration defaultConfiguration) {
         if (personCN == null) {
             personCN = getCorrectCN(person.getUsername(), ldapClient);
         }
         return retrieveSyncInfo(collectAttributeMap(person), PERSON_FIELDS_TO_SYNC, personCN, ldapClient, defaultConfiguration);
     }
 
-    private static StringBuilder concatenateValues(List<String> list) {
+    private static StringBuilder concatenateValues(final List<String> list) {
         StringBuilder builder = new StringBuilder();
         if (list != null && !list.isEmpty()) {
             for (String element : list) {
@@ -555,7 +557,7 @@ public class LdapIntegration {
         return builder;
     }
 
-    private static boolean deleteCommonName(String commonName, LdapServerIntegrationConfiguration configuration) {
+    private static boolean deleteCommonName(final String commonName, final LdapServerIntegrationConfiguration configuration) {
         boolean ableToSend = false;
         LdapClient client = configuration.getClient();
         try {
@@ -569,11 +571,11 @@ public class LdapIntegration {
         return ableToSend;
     }
 
-    public static boolean deleteUser(String username) {
+    public static boolean deleteUser(final String username) {
         return deleteUser(username, getDefaultConfiguration());
     }
 
-    public static boolean deleteUser(String username, LdapServerIntegrationConfiguration configuration) {
+    public static boolean deleteUser(final String username, final LdapServerIntegrationConfiguration configuration) {
         LdapClient client = configuration.getClient();
         try {
             if (client.login()) {
@@ -585,7 +587,7 @@ public class LdapIntegration {
         }
     }
 
-    private static boolean isSynched(Map<String, String[]> syncInformation) {
+    private static boolean isSynched(final Map<String, String[]> syncInformation) {
         Set<Entry<String, String[]>> entrySet = syncInformation.entrySet();
         for (Entry<String, String[]> entry : entrySet) {
             String[] parameter = entry.getValue();
@@ -601,14 +603,14 @@ public class LdapIntegration {
                 value0 = value0 != null ? value0.substring(0, 9) : null;
                 value1 = value1 != null ? value1.substring(0, 9) : null;
             }
-            if ((value0 == null && value1 != null) || (value0 != null && value1 == null) || (!value0.equals(value1))) {
+            if (value0 == null && value1 != null || value0 != null && value1 == null || !value0.equals(value1)) {
                 return false;
             }
         }
         return true;
     }
 
-    public static boolean isUpdateNeeded(Person person, LdapServerIntegrationConfiguration configuration) {
+    public static boolean isUpdateNeeded(final Person person, final LdapServerIntegrationConfiguration configuration) {
         LdapClient client = configuration.getClient();
         boolean isUpdated = false;
         try {
@@ -621,8 +623,8 @@ public class LdapIntegration {
         return isUpdated;
     }
 
-    private static boolean isUpdateNeeded(Person person, String personCN, LdapClient client,
-            LdapServerIntegrationConfiguration configuration) {
+    private static boolean isUpdateNeeded(final Person person, final String personCN, final LdapClient client,
+            final LdapServerIntegrationConfiguration configuration) {
         Map<String, String[]> retrieveSyncInformation = retrieveSyncInformation(person, personCN, client, configuration);
         boolean isPersonUpdated = isSynched(retrieveSyncInformation);
         boolean isStudentUpdated = isPersonUpdated && (person.getStudent() == null
@@ -631,15 +633,16 @@ public class LdapIntegration {
         return !isPersonUpdated || !isStudentUpdated;
     }
 
-    public static boolean isUpdateNeeded(Person person) {
+    public static boolean isUpdateNeeded(final Person person) {
         return isUpdateNeeded(person, getDefaultConfiguration());
     }
 
-    public static boolean isPersonAvailableInLdap(Person person) {
+    public static boolean isPersonAvailableInLdap(final Person person) {
         return isPersonAvailableInLdap(person, getDefaultConfiguration());
     }
 
-    private static boolean isPersonAvailableInLdap(Person person, LdapServerIntegrationConfiguration defaultConfiguration) {
+    private static boolean isPersonAvailableInLdap(final Person person,
+            final LdapServerIntegrationConfiguration defaultConfiguration) {
         boolean isAvailable = false;
         LdapClient client = defaultConfiguration.getClient();
         try {
@@ -653,13 +656,13 @@ public class LdapIntegration {
         return isAvailable;
     }
 
-    public static Map<String, String> getFieldValues(Person person, String... fields) {
+    public static Map<String, String> getFieldValues(final Person person, final String... fields) {
         return getFieldValues(person, getDefaultConfiguration(), fields);
     }
 
-    public static Map<String, String> getFieldValues(Person person, LdapServerIntegrationConfiguration defaultConfiguration,
-            String... fields) {
-        Map<String, String> result = new HashMap<String, String>();
+    public static Map<String, String> getFieldValues(final Person person,
+            final LdapServerIntegrationConfiguration defaultConfiguration, final String... fields) {
+        Map<String, String> result = new HashMap<>();
         LdapClient client = defaultConfiguration.getClient();
         try {
             if (client.login()) {
@@ -685,8 +688,8 @@ public class LdapIntegration {
     private final static Cache<String, Boolean> EXISTING_USERNAME_CACHE =
             CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.HOURS).maximumSize(10000).build();
 
-    private static boolean isPersonAvailableInLdap(Person person, LdapClient client,
-            LdapServerIntegrationConfiguration defaultConfiguration) {
+    private static boolean isPersonAvailableInLdap(final Person person, final LdapClient client,
+            final LdapServerIntegrationConfiguration defaultConfiguration) {
         boolean isAvailable = false;
 
         try {
@@ -714,8 +717,8 @@ public class LdapIntegration {
         return isAvailable;
     }
 
-    private static boolean isPersonAvailableWithAttribute(Person person, String attributeName, LdapClient client,
-            LdapServerIntegrationConfiguration defaultConfiguration) {
+    private static boolean isPersonAvailableWithAttribute(final Person person, final String attributeName,
+            final LdapClient client, final LdapServerIntegrationConfiguration defaultConfiguration) {
         boolean isAvailable = false;
         try {
             String usernameToSearch = person.getUsername();
@@ -734,11 +737,11 @@ public class LdapIntegration {
         return isAvailable;
     }
 
-    public static boolean updateStudentStatus(Student student) {
+    public static boolean updateStudentStatus(final Student student) {
         return updateStudentStatus(student, getDefaultConfiguration());
     }
 
-    public static boolean updateStudentStatus(Student student, LdapServerIntegrationConfiguration configuration) {
+    public static boolean updateStudentStatus(final Student student, final LdapServerIntegrationConfiguration configuration) {
         Person person = student.getPerson();
 
         boolean ableToUpdateStudent = false;
@@ -762,7 +765,7 @@ public class LdapIntegration {
 
     }
 
-    private static void tryToFix(QueryReply query, String username) {
+    private static void tryToFix(final QueryReply query, final String username) {
         String bennuPrefix = "bennu";
         QueryReplyElement replyOne = query.getResults().get(0);
         QueryReplyElement replyTwo = query.getResults().get(1);
@@ -782,16 +785,16 @@ public class LdapIntegration {
         }
     }
 
-    public static boolean createPersonInLdap(Person person) {
+    public static boolean createPersonInLdap(final Person person) {
         return createPersonInLdap(person, getDefaultConfiguration());
     }
 
-    public static boolean createPersonInLdap(Person person, LdapServerIntegrationConfiguration configuration) {
+    public static boolean createPersonInLdap(final Person person, final LdapServerIntegrationConfiguration configuration) {
         return createOrUpdatePeopleInLdap(Collections.singletonList(person), configuration);
     }
 
-    public static boolean createOrUpdatePeopleInLdap(Collection<Person> people,
-            LdapServerIntegrationConfiguration configuration) {
+    public static boolean createOrUpdatePeopleInLdap(final Collection<Person> people,
+            final LdapServerIntegrationConfiguration configuration) {
         boolean ableToSend = false;
         LdapClient client = configuration.getClient();
         boolean login = client.login();
@@ -839,19 +842,19 @@ public class LdapIntegration {
         return ableToSend;
     }
 
-    public static boolean updatePersonInLdap(Person person) {
+    public static boolean updatePersonInLdap(final Person person) {
         return updatePersonInLdap(person, getDefaultConfiguration());
     }
 
-    public static boolean updatePersonInLdap(Person person, LdapServerIntegrationConfiguration configuration) {
+    public static boolean updatePersonInLdap(final Person person, final LdapServerIntegrationConfiguration configuration) {
         return createOrUpdatePeopleInLdap(Collections.singletonList(person), configuration);
     }
 
-    public static boolean updatePersonUsingLdap(Person person) {
+    public static boolean updatePersonUsingLdap(final Person person) {
         return updatePersonUsingLdap(person, getDefaultConfiguration());
     }
 
-    public static boolean updatePersonUsingLdap(Person person, LdapServerIntegrationConfiguration configuration) {
+    public static boolean updatePersonUsingLdap(final Person person, final LdapServerIntegrationConfiguration configuration) {
 
         String schoolCode = getSchoolCode();
         LdapClient client = configuration.getClient();
@@ -892,8 +895,8 @@ public class LdapIntegration {
     }
 
     @Atomic
-    private static void updatePerson(Person person, String instituionalEmail, String personalEmail, String birthDate,
-            String documentID, String sex, String givenNames, String surnames) {
+    private static void updatePerson(final Person person, final String instituionalEmail, final String personalEmail,
+            final String birthDate, final String documentID, final String sex, final String givenNames, final String surnames) {
 
         // if (person.getDocumentIdNumber() != null &&
         // !person.getDocumentIdNumber().equals(documentID)) {
@@ -940,19 +943,28 @@ public class LdapIntegration {
         }
 
         if (!StringUtils.isEmpty(givenNames) && !StringUtils.isEmpty(surnames)
-                && !person.getPartyName().equalInAnyLanguage(givenNames + " " + surnames)) {
+                && !equalInAnyLanguage(person.getPartyName(), givenNames + " " + surnames)) {
             String displayName = givenNames.split(" ")[0] + " " + surnames.split(" ")[0];
             person.getProfile().changeName(givenNames, surnames, displayName);
         }
 
     }
 
-    public static boolean writeAtttribute(Person person, String attributeName, String attributeValue) {
+    private static boolean equalInAnyLanguage(final LocalizedString string, final String match) {
+        for (Locale l : string.getLocales()) {
+            if (string.getContent(l).equals(match)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean writeAtttribute(final Person person, final String attributeName, final String attributeValue) {
         return writeAtttribute(person, attributeName, attributeValue, getDefaultConfiguration());
     }
 
-    public static boolean writeAtttribute(Person person, String attributeName, String attributeValue,
-            LdapServerIntegrationConfiguration configuration) {
+    public static boolean writeAtttribute(final Person person, final String attributeName, final String attributeValue,
+            final LdapServerIntegrationConfiguration configuration) {
 
         LdapClient client = configuration.getClient();
         boolean attributeSent = false;
@@ -980,7 +992,7 @@ public class LdapIntegration {
     // This will be used by the candidates.
     //
     // 30 July 2015 - Paulo Abrantes
-    public static String generateLdapPassword(String password, String salt) {
+    public static String generateLdapPassword(final String password, final String salt) {
         byte[] hashedString = null;
         try {
             hashedString = java.security.MessageDigest.getInstance("SHA-1").digest((password + salt).getBytes());
@@ -999,11 +1011,11 @@ public class LdapIntegration {
         return "{SSHA}" + BaseEncoding.base64().encode(finalArray).trim();
     }
 
-    public static boolean removePassword(String username) {
+    public static boolean removePassword(final String username) {
         return removePassword(username, getDefaultConfiguration());
     }
 
-    private static boolean removePassword(String username, LdapServerIntegrationConfiguration configuration) {
+    private static boolean removePassword(final String username, final LdapServerIntegrationConfiguration configuration) {
         AttributesMap attributesMap = new AttributesMap();
         attributesMap.add(USER_PASSWORD, (String) null);
 
@@ -1029,12 +1041,12 @@ public class LdapIntegration {
         return ableToSend;
     }
 
-    public static boolean changePassword(String username, String password, String salt) {
+    public static boolean changePassword(final String username, final String password, final String salt) {
         return changePassword(username, password, salt, getDefaultConfiguration());
     }
 
-    public static boolean changePassword(String username, String password, String salt,
-            LdapServerIntegrationConfiguration configuration) {
+    public static boolean changePassword(final String username, final String password, final String salt,
+            final LdapServerIntegrationConfiguration configuration) {
         String generateLdapPassword =
                 ULisboaConfiguration.getConfiguration().getSendHashedPassword() ? generateLdapPassword(password, salt) : password;
         AttributesMap attributesMap = new AttributesMap();
@@ -1056,11 +1068,12 @@ public class LdapIntegration {
         return ableToSend;
     }
 
-    public static boolean changeCN(Person person, String newUsername) {
+    public static boolean changeCN(final Person person, final String newUsername) {
         return changeCN(person, newUsername, getDefaultConfiguration());
     }
 
-    public static boolean changeCN(Person person, String newUsername, LdapServerIntegrationConfiguration configuration) {
+    public static boolean changeCN(final Person person, final String newUsername,
+            final LdapServerIntegrationConfiguration configuration) {
         boolean ableToRename = false;
         LdapClient client = configuration.getClient();
         try {
@@ -1074,7 +1087,7 @@ public class LdapIntegration {
         return ableToRename;
     }
 
-    public static boolean existsUser(String username, LdapServerIntegrationConfiguration configuration) {
+    public static boolean existsUser(final String username, final LdapServerIntegrationConfiguration configuration) {
         LdapClient client = configuration.getClient();
         try {
             if (client.login()) {
@@ -1089,16 +1102,16 @@ public class LdapIntegration {
         return false;
     }
 
-    public static boolean existsUser(String username) {
+    public static boolean existsUser(final String username) {
         return existsUser(username, getDefaultConfiguration());
     }
 
-    public static boolean createUser(String username, String password, String salt) {
+    public static boolean createUser(final String username, final String password, final String salt) {
         return createUser(username, password, salt, getDefaultConfiguration());
     }
 
-    public static boolean createUser(String username, String password, String salt,
-            LdapServerIntegrationConfiguration configuration) {
+    public static boolean createUser(final String username, final String password, final String salt,
+            final LdapServerIntegrationConfiguration configuration) {
         String generateLdapPassword =
                 ULisboaConfiguration.getConfiguration().getSendHashedPassword() ? generateLdapPassword(password, salt) : password;
         AttributesMap attributesMap = new AttributesMap();
