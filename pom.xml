@@ -42,12 +42,12 @@
 		<dependency>
 			<groupId>com.qubit.terra</groupId>
 			<artifactId>ldap-client</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>1.0.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.fenixedu.ulisboa</groupId>
 			<artifactId>fenixedu-ulisboa-specifications</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>1.0.0</version>
 		</dependency>
 	</dependencies>
 
