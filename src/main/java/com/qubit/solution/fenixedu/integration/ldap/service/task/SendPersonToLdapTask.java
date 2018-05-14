@@ -27,13 +27,13 @@
 package com.qubit.solution.fenixedu.integration.ldap.service.task;
 
 import org.fenixedu.bennu.core.domain.Bennu;
+import org.fenixedu.bennu.scheduler.CronTask;
 import org.fenixedu.bennu.scheduler.annotation.Task;
-import org.fenixedu.bennu.scheduler.custom.CustomTask;
 
 import com.qubit.solution.fenixedu.integration.ldap.domain.configuration.LdapServerIntegrationConfiguration;
 
 @Task(englishTitle = "Send users to ldap")
-public class SendPersonToLdapTask extends CustomTask {
+public class SendPersonToLdapTask extends CronTask {
 
     @Override
     public void runTask() throws Exception {
