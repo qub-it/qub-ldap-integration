@@ -38,6 +38,11 @@ public class UsernameHack {
         User findByUsername = User.findByUsername(oldUsername);
         if (findByUsername != null) {
             findByUsername.setUsername(newUsername);
+            String avatarUrl = findByUsername.getProfile().getAvatarUrl();
+            if (avatarUrl != null && avatarUrl.contains(oldUsername)) {
+                avatarUrl.replace(oldUsername, newUsername);
+                findByUsername.getProfile().setAvatarUrl(avatarUrl);
+            }
         }
     }
 
