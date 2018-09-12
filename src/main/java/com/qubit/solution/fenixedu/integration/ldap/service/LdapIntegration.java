@@ -1068,6 +1068,32 @@ public class LdapIntegration {
         return ableToSend;
     }
 
+    public static boolean changeULFenixUser(final Person person, final String newUsername) {
+        return changeULFenixUser(person, newUsername, getDefaultConfiguration());
+    }
+
+    public static boolean changeULFenixUser(final Person person, final String newUsername,
+            final LdapServerIntegrationConfiguration configuration) {
+        boolean ableToUpdate = false;
+        LdapClient client = configuration.getClient();
+        AttributesMap attributesMap = new AttributesMap();
+        attributesMap.add(UL_FENIXUSER, newUsername);
+
+        try {
+            if (client.login()) {
+                client.replaceInExistingContext(getPersonCommonName(person, client, configuration), Collections.emptyList(),
+                        attributesMap);
+                ableToUpdate = true;
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
+        } finally {
+            client.logout();
+        }
+
+        return ableToUpdate;
+    }
+
     public static boolean changeCN(final Person person, final String newUsername) {
         return changeCN(person, newUsername, getDefaultConfiguration());
     }
