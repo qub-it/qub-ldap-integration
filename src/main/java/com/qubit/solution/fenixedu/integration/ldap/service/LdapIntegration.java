@@ -822,6 +822,7 @@ public class LdapIntegration {
                             //
                             // 30 July 2015 - Paulo Abrantes
                             collectAttributeMap.add(UL_FENIXUSER, person.getUsername());
+                            logger.debug("Sending " + person.getUsername() + " to ldap");
                             client.writeNewContext(personCommonName, objectClasses, collectAttributeMap);
                         } catch (Throwable t) {
                             t.printStackTrace();
@@ -829,6 +830,7 @@ public class LdapIntegration {
                     } else if (isUpdateNeeded(person, personCN, client, configuration)) {
                         List<String> objectClasses = new ArrayList<String>(Arrays.asList(OBJECT_CLASSES_TO_ADD));
                         try {
+                            logger.debug("Updating " + person.getUsername() + " in ldap");
                             client.replaceInExistingContext(personCommonName, objectClasses, collectAttributeMap(person));
                             ableToSend = true;
                         } catch (Throwable t) {
