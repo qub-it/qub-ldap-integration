@@ -266,7 +266,7 @@ public class LdapIntegration {
             }
             attributesMap.add(UL_COURSES + getSchoolCode(), courses.toArray(new String[] {}));
         } else {
-            attributesMap.add(UL_COURSES + getSchoolCode(), StringUtils.EMPTY);
+            attributesMap.add(UL_COURSES + getSchoolCode(), new String[] { "n/a" });
         }
 
     }
