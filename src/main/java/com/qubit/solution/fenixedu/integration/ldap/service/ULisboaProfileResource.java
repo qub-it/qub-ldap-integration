@@ -36,6 +36,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.commons.lang.StringUtils;
+import org.fenixedu.academic.FenixEduAcademicExtensionsConfiguration;
+import org.fenixedu.academic.FenixEduAcademicExtensionsConfiguration.ConfigurationProperties;
 import org.fenixedu.bennu.core.api.ProfileResource;
 import org.fenixedu.bennu.core.api.json.AuthenticatedUserViewer;
 import org.fenixedu.bennu.core.domain.Bennu;
@@ -45,8 +47,7 @@ import org.fenixedu.bennu.core.domain.exceptions.AuthorizationException;
 import org.fenixedu.bennu.core.groups.Group;
 import org.fenixedu.bennu.core.security.Authenticate;
 import org.fenixedu.bennu.core.util.CoreConfiguration;
-import org.fenixedu.ulisboa.specifications.ULisboaConfiguration;
-import org.fenixedu.ulisboa.specifications.ULisboaConfiguration.ConfigurationProperties;
+
 
 import com.google.gson.JsonElement;
 import com.qubit.solution.fenixedu.integration.ldap.domain.configuration.LdapServerIntegrationConfiguration;
@@ -76,7 +77,7 @@ public class ULisboaProfileResource extends ProfileResource {
     public JsonElement login(@Context final HttpServletRequest request, @Context final HttpServletResponse response,
             @FormParam("username") final String username, @FormParam("password") final String password) {
         LdapServerIntegrationConfiguration defaultLdapServer = Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration();
-        ConfigurationProperties configuration = ULisboaConfiguration.getConfiguration();
+        ConfigurationProperties configuration = FenixEduAcademicExtensionsConfiguration.getConfiguration();
 
         if (isValidQualityAuthentication(username, password, configuration)) {
             Authenticate.login(request, response, User.findByUsername(username), "TODO: CHANGE ME");
