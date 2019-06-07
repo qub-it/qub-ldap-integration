@@ -11,7 +11,7 @@
 
 	<groupId>com.qubit.solution.fenixedu</groupId>
 	<artifactId>fenixedu-ulisboa-ldapIntegration</artifactId>
-	<version>2.1.2</version>
+	<version>2.2.0</version>
 	<packaging>jar</packaging>
 
 	<name>fenixedu-ulisboa-ldapIntegration</name>
