@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.fenixedu.academic.domain.Country;
-import org.fenixedu.academic.domain.ExecutionSemester;
+import org.fenixedu.academic.domain.ExecutionInterval;
 import org.fenixedu.academic.domain.ExecutionYear;
 import org.fenixedu.academic.domain.Person;
 import org.fenixedu.academic.domain.contacts.EmailAddress;
@@ -382,9 +382,9 @@ public class LdapIntegration {
         List<AcademicInterval> intervals = new ArrayList<>();
         intervals.add(readCurrentExecutionYear.getAcademicInterval());
         intervals.add(previousExecutionYear.getAcademicInterval());
-        intervals.addAll(readCurrentExecutionYear.getExecutionPeriodsSet().stream().map(ExecutionSemester::getAcademicInterval)
+        intervals.addAll(readCurrentExecutionYear.getExecutionPeriodsSet().stream().map(ExecutionInterval::getAcademicInterval)
                 .collect(Collectors.toList()));
-        intervals.addAll(previousExecutionYear.getExecutionPeriodsSet().stream().map(ExecutionSemester::getAcademicInterval)
+        intervals.addAll(previousExecutionYear.getExecutionPeriodsSet().stream().map(ExecutionInterval::getAcademicInterval)
                 .collect(Collectors.toList()));
 
         return person.getTeacher() != null && !person.getTeacher().getTeacherAuthorizationStream()
