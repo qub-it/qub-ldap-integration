@@ -42,12 +42,10 @@ import org.fenixedu.bennu.core.api.ProfileResource;
 import org.fenixedu.bennu.core.api.json.AuthenticatedUserViewer;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.bennu.core.domain.User;
-import org.fenixedu.bennu.core.domain.UsernameHack;
 import org.fenixedu.bennu.core.domain.exceptions.AuthorizationException;
 import org.fenixedu.bennu.core.groups.Group;
 import org.fenixedu.bennu.core.security.Authenticate;
 import org.fenixedu.bennu.core.util.CoreConfiguration;
-
 
 import com.google.gson.JsonElement;
 import com.qubit.solution.fenixedu.integration.ldap.domain.configuration.LdapServerIntegrationConfiguration;
@@ -144,6 +142,9 @@ public class ULisboaProfileResource extends ProfileResource {
 
     @Atomic
     private void usernameAlign(final String oldUsername, final String newUsername) {
-        UsernameHack.changeUsername(oldUsername, newUsername);
+        User findByUsername = User.findByUsername(oldUsername);
+        if (findByUsername != null) {
+            findByUsername.changePassword(newUsername);
+        }
     }
 }

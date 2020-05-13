@@ -56,7 +56,7 @@ import org.fenixedu.academic.domain.student.Registration;
 import org.fenixedu.academic.domain.student.Student;
 import org.fenixedu.academic.domain.time.calendarStructure.AcademicInterval;
 import org.fenixedu.bennu.core.domain.Bennu;
-import org.fenixedu.bennu.core.domain.UsernameHack;
+import org.fenixedu.bennu.core.domain.User;
 import org.fenixedu.bennu.core.groups.DynamicGroup;
 import org.fenixedu.commons.i18n.LocalizedString;
 import org.fenixedu.ulisboa.specifications.ULisboaConfiguration;
@@ -419,7 +419,10 @@ public class LdapIntegration {
 
     @Atomic
     private static void changeUsername(final String username, final String originalFenixUsername) {
-        UsernameHack.changeUsername(username, originalFenixUsername);
+        User findByUsername = User.findByUsername(username);
+        if (findByUsername != null) {
+            findByUsername.changePassword(originalFenixUsername);
+        }
     }
 
     public static LdapServerIntegrationConfiguration getDefaultConfiguration() {
