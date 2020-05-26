@@ -421,7 +421,7 @@ public class LdapIntegration {
     private static void changeUsername(final String username, final String originalFenixUsername) {
         User findByUsername = User.findByUsername(username);
         if (findByUsername != null) {
-            findByUsername.changePassword(originalFenixUsername);
+            findByUsername.changeUsername(originalFenixUsername);
         }
     }
 
