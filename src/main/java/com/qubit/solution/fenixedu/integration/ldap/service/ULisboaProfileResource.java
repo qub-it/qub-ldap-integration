@@ -144,7 +144,7 @@ public class ULisboaProfileResource extends ProfileResource {
     private void usernameAlign(final String oldUsername, final String newUsername) {
         User findByUsername = User.findByUsername(oldUsername);
         if (findByUsername != null) {
-            findByUsername.changePassword(newUsername);
+            findByUsername.changeUsername(newUsername);
         }
     }
 }
