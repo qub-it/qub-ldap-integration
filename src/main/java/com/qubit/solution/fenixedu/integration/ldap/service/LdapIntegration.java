@@ -95,7 +95,7 @@ public class LdapIntegration {
     private static final String UL_ROLE_ATTRIBUTE = "ULRole";
     private static final String UL_INTERNAL_EMAIL_ADDR_ATTRIBUTE = "ULInternalEmailAddr";
     private static final String UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE = "ULExternalEmailAddr";
-    private static final String INTERNET_EMAIL_ADDRESS = "InternetEmailAddress";
+    private static final String INTERNET_EMAIL_ADDRESS = "mail";
     private static final String UL_POSTAL_CODE_ATTRIBUTE = "ULPostalCode";
     private static final String UL_POSTAL_ADDR_ATTRIBUTE = "ULPostalAddr";
     private static final String UL_BIRTH_DATE_ATTRIBUTE = "ULBirthDate";

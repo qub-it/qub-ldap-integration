@@ -1,3 +1,5 @@
+- Refactor: Changed internal email address ldap field from InternetEmailAddress to mail
+
 2.4.5 (26-08-2020)
 - Refactor: Changed imports for CgdCard
 
