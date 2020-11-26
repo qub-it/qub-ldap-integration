@@ -1,3 +1,4 @@
+2.4.6.20201126_1721 (26-11-2020)
 2.4.6 (18-09-2020)
 - Refactor: Changed internal email address ldap field from InternetEmailAddress to mail
 
