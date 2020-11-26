@@ -31,13 +31,15 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
 
 import org.fenixedu.academic.domain.Person;
+import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.ulisboa.specifications.domain.student.access.StudentAccessServices;
-
-import pt.ist.fenixframework.FenixFramework;
-import pt.ist.fenixframework.dml.DeletionListener;
 
 import com.qubit.solution.fenixedu.integration.ldap.service.LdapIntegration;
 import com.qubit.solution.fenixedu.integration.ldap.service.integration.SyncPersonWithLdap;
+
+import pt.ist.fenixframework.Atomic;
+import pt.ist.fenixframework.FenixFramework;
+import pt.ist.fenixframework.dml.DeletionListener;
 
 @WebListener
 public class LdapIntegrationInitializer implements ServletContextListener {
@@ -52,6 +54,15 @@ public class LdapIntegrationInitializer implements ServletContextListener {
             }
         });
         StudentAccessServices.subscribeSyncPerson(new SyncPersonWithLdap());
+
+        migrateLoginFlag();
+
+    }
+
+    @Atomic
+    private void migrateLoginFlag() {
+        Bennu.getInstance().getLdapServerIntegrationConfigurationsSet().stream().filter(s -> s.getAllowNonBennusToLogin() == null)
+                .forEach(s -> s.setAllowNonBennusToLogin(true));
     }
 
     @Override

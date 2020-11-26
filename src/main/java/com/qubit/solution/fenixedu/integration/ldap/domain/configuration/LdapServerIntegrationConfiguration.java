@@ -44,7 +44,6 @@ import com.qubit.terra.ldapclient.LdapClient;
 import pt.ist.fenixframework.Atomic;
 import pt.ist.fenixframework.Atomic.TxMode;
 import pt.ist.fenixframework.CallableWithoutException;
-import pt.ist.fenixframework.FenixFramework;
 
 public class LdapServerIntegrationConfiguration extends LdapServerIntegrationConfiguration_Base {
 
@@ -65,7 +64,11 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
         if (setHasDefault) {
             configureAsDefault();
         }
+        setAllowNonBennusToLogin(true);
+    }
 
+    public boolean isNonBennuUserAllowedToLogin() {
+        return Boolean.TRUE.equals(getAllowNonBennusToLogin());
     }
 
     public void delete() {

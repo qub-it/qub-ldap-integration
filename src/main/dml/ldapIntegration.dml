@@ -34,6 +34,7 @@ class configuration.LdapServerIntegrationConfiguration {
 	String url;
 	String baseDomain;
 	Integer numberOfWorkers;
+	Boolean allowNonBennusToLogin;
 }
 
 relation LdapIntegrationConfigurationRootDomainObject {

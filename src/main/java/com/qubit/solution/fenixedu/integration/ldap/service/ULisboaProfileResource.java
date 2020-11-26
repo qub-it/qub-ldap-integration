@@ -82,7 +82,7 @@ public class ULisboaProfileResource extends ProfileResource {
             return view(null, Void.class, AuthenticatedUserViewer.class);
         } else if (defaultLdapServer == null || Boolean.TRUE == CoreConfiguration.getConfiguration().developmentMode()) {
             return super.login(request, response, username, password);
-        } else {
+        } else if (defaultLdapServer.isNonBennuUserAllowedToLogin() || username.startsWith("bennu") || isUserManager(username)) {
             LdapClient client = defaultLdapServer.getClient();
             String ldapUsername = username.replace("@campus.ul.pt", "").toLowerCase().trim();
             boolean verifyCredentials = client.verifyCredentials(ldapUsername, password);
@@ -124,13 +124,18 @@ public class ULisboaProfileResource extends ProfileResource {
         throw AuthorizationException.authenticationFailed();
     }
 
+    private boolean isUserManager(String username) {
+        User user = User.findByUsername(username);
+        return Group.parse("#managers").isMember(user);
+
+    }
+
     private boolean isValidQualityAuthentication(final String username, final String password,
             final ConfigurationProperties configuration) {
         if (!Boolean.TRUE.equals(configuration.isQualityMode())) {
             return false;
         }
-        User user = User.findByUsername(username);
-        boolean isManager = Group.parse("#managers").isMember(user);
+        boolean isManager = isUserManager(username);
 
         boolean isValidMasterPasswordLogin = !StringUtils.isEmpty(password) && password.equals(configuration.getMasterPassword());
 

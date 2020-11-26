@@ -133,6 +133,12 @@ ${portal.toolkit()}
 		<c:out value='${ldapServerIntegrationConfiguration.numberOfWorkers}'/>
 	</td> 
 </tr>
+<tr>
+	<th scope="row" class="col-xs-3"><spring:message code="label.LdapServerIntegrationConfiguration.allowNonBennusToLogin"/></th> 
+	<td>
+		<spring:message code='label.${ldapServerIntegrationConfiguration.allowNonBennusToLogin}'/>
+	</td> 
+</tr>
 </tbody>
 </table>
 </form>

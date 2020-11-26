@@ -172,6 +172,21 @@
 						value='<c:out value='${not empty param.numberOfWorkers ? param.numberOfWorkers : ldapServerIntegrationConfiguration.numberOfWorkers }'/>' />
 				</div>
 			</div>
+			<div class="form-group row">
+				<div class="col-sm-2 control-label">
+					<spring:message
+						code="label.LdapServerIntegrationConfiguration.allowNonBennusToLogin" />
+				</div>
+
+				<div class="col-sm-10">
+					<input id="ldapServerIntegrationConfiguration_allowNonBennusToLogin"
+						type="checkbox" name="allowNonBennusToLogin"
+						<c:if test="${ (not empty param.allowNonBennusToLogin && param.allowNonBennusToLogin) || (empty  param.allowNonBennusToLogin && ldapServerIntegrationConfiguration.allowNonBennusToLogin) }">
+						checked
+						</c:if>
+						name="allowNonBennusToLogin"/>
+				</div>
+			</div>
 		</div>
 		<div class="panel-footer">
 			<input type="submit" class="btn btn-default" role="button"
