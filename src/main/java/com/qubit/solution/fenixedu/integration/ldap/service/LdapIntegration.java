@@ -51,6 +51,7 @@ import org.fenixedu.academic.domain.contacts.EmailAddress;
 import org.fenixedu.academic.domain.contacts.PartyContact;
 import org.fenixedu.academic.domain.contacts.PartyContactType;
 import org.fenixedu.academic.domain.contacts.PhysicalAddress;
+import org.fenixedu.academic.domain.groups.PermissionService;
 import org.fenixedu.academic.domain.person.Gender;
 import org.fenixedu.academic.domain.student.Registration;
 import org.fenixedu.academic.domain.student.Student;
@@ -78,6 +79,7 @@ import com.qubit.terra.ldapclient.AttributesMap;
 import com.qubit.terra.ldapclient.LdapClient;
 import com.qubit.terra.ldapclient.QueryReply;
 import com.qubit.terra.ldapclient.QueryReplyElement;
+import com.qubit.terra.qubAccessControl.domain.AccessControlProfile;
 
 import edu.emory.mathcs.backport.java.util.Arrays;
 import edu.emory.mathcs.backport.java.util.Collections;
@@ -393,7 +395,10 @@ public class LdapIntegration {
     }
 
     private static boolean isEmployee(final Person person) {
-        return DynamicGroup.get("employees").isMember(person.getUser());
+        LdapServerIntegrationConfiguration defaultConfiguration = getDefaultConfiguration();
+        return (!StringUtils.isEmpty(defaultConfiguration.getEmployeeProfile()) && PermissionService
+                .hasAccess(AccessControlProfile.findByCode(defaultConfiguration.getEmployeeProfile()), person.getUser()))
+                || DynamicGroup.get("employees").isMember(person.getUser());
     }
 
     public static void resetUsername(final Person person) {

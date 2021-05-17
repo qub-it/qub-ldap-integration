@@ -128,6 +128,12 @@ ${portal.toolkit()}
 	</td> 
 </tr>
 <tr>
+	<th scope="row" class="col-xs-3"><spring:message code="label.LdapServerIntegrationConfiguration.employeeProfile"/></th> 
+	<td>
+		<c:out value='${ldapServerIntegrationConfiguration.employeeProfile}'/>
+	</td> 
+</tr>
+<tr>
 	<th scope="row" class="col-xs-3"><spring:message code="label.LdapServerIntegrationConfiguration.numberOfWorkers"/></th> 
 	<td>
 		<c:out value='${ldapServerIntegrationConfiguration.numberOfWorkers}'/>

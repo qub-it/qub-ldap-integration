@@ -170,9 +170,9 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
             @RequestParam(value = "url", required = false) java.lang.String url,
             @RequestParam(value = "basedomain", required = false) java.lang.String baseDomain,
             @RequestParam(value = "numberOfWorkers", required = false) java.lang.Integer numberOfWorkers,
-            @RequestParam(value = "allowNonBennusToLogin", required = false, defaultValue = "false") java.lang.Boolean allowNonBennusToLogin,
-
-            Model model) {
+            @RequestParam(value = "allowNonBennusToLogin", required = false,
+                    defaultValue = "false") java.lang.Boolean allowNonBennusToLogin,
+            @RequestParam(value = "employeeProfile", required = false) java.lang.String employeeProfile, Model model) {
 
         if (!password.equals(passwordConfirmation)) {
             addErrorMessage("Password and password confirmation do not match", model);
@@ -183,7 +183,7 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
 
         try {
             ldapServerIntegrationConfiguration = createLdapServerIntegrationConfiguration(serverID, username, password, url,
-                    baseDomain, numberOfWorkers, allowNonBennusToLogin);
+                    baseDomain, employeeProfile, numberOfWorkers, allowNonBennusToLogin);
         } catch (DomainException e) {
             addErrorMessage(e.getMessage(), model);
             return create(model);
@@ -197,11 +197,12 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
     @Atomic
     public LdapServerIntegrationConfiguration createLdapServerIntegrationConfiguration(java.lang.String serverID,
             java.lang.String username, java.lang.String password, java.lang.String url, java.lang.String baseDomain,
-            Integer numberOfWorkers, Boolean allowNonBennusToLogin) {
+            String employeeProfile, Integer numberOfWorkers, Boolean allowNonBennusToLogin) {
         LdapServerIntegrationConfiguration ldapServerIntegrationConfiguration =
                 new LdapServerIntegrationConfiguration(serverID, username, password, url, baseDomain);
         ldapServerIntegrationConfiguration.setNumberOfWorkers(numberOfWorkers);
         ldapServerIntegrationConfiguration.setAllowNonBennusToLogin(allowNonBennusToLogin);
+        ldapServerIntegrationConfiguration.setEmployeeProfile(employeeProfile);
         return ldapServerIntegrationConfiguration;
     }
 
@@ -229,7 +230,7 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
             @RequestParam(value = "numberOfWorkers", required = false) java.lang.Integer numberOfWorkers,
             @RequestParam(value = "allowNonBennusToLogin", required = false,
                     defaultValue = "false") java.lang.Boolean allowNonBennusToLogin,
-            Model model) {
+            @RequestParam(value = "employeeProfile", required = false) java.lang.String employeeProfile, Model model) {
 
         if (!password.equals(passwordConfirmation)) {
             addErrorMessage("Password and password confirmation do not match", model);
@@ -237,7 +238,7 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
         }
 
         setLdapServerIntegrationConfiguration(ldapServerIntegrationConfiguration, model);
-        updateLdapServerIntegrationConfiguration(serverID, username, password, url, baseDomain, numberOfWorkers,
+        updateLdapServerIntegrationConfiguration(serverID, username, password, url, baseDomain, employeeProfile, numberOfWorkers,
                 allowNonBennusToLogin, model);
 
         return "redirect:/ldap/ldapconfiguration/ldapserverintegrationconfiguration/read/"
@@ -247,13 +248,14 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
 
     @Atomic
     public void updateLdapServerIntegrationConfiguration(java.lang.String serverID, java.lang.String username,
-            java.lang.String password, java.lang.String url, java.lang.String baseDomain, Integer numberOfWorkers,
-            Boolean allowNonBennusToLogin, Model m) {
+            java.lang.String password, java.lang.String url, java.lang.String baseDomain, String employeeProfile,
+            Integer numberOfWorkers, Boolean allowNonBennusToLogin, Model m) {
         getLdapServerIntegrationConfiguration(m).setServerID(serverID);
         getLdapServerIntegrationConfiguration(m).setUsername(username);
         getLdapServerIntegrationConfiguration(m).setPassword(password);
         getLdapServerIntegrationConfiguration(m).setUrl(url);
         getLdapServerIntegrationConfiguration(m).setBaseDomain(baseDomain);
+        getLdapServerIntegrationConfiguration(m).setEmployeeProfile(employeeProfile);
         getLdapServerIntegrationConfiguration(m).setNumberOfWorkers(numberOfWorkers);
         getLdapServerIntegrationConfiguration(m).setAllowNonBennusToLogin(allowNonBennusToLogin);
     }

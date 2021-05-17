@@ -64,6 +64,7 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
         if (setHasDefault) {
             configureAsDefault();
         }
+        setEmployeeProfile(null);
         setAllowNonBennusToLogin(true);
     }
 

@@ -157,6 +157,20 @@
 						value='<c:out value='${not empty param.basedomain ? param.basedomain : ldapServerIntegrationConfiguration.baseDomain }'/>' />
 				</div>
 			</div>
+			
+			<div class="form-group row">
+				<div class="col-sm-2 control-label">
+					<spring:message
+						code="label.LdapServerIntegrationConfiguration.employeeProfile" />
+				</div>
+
+				<div class="col-sm-10">
+					<input id="ldapServerIntegrationConfiguration_employeeProfile"
+						class="form-control" type="text" name="employeeProfile"
+						value='<c:out value='${not empty param.employeeProfile ? param.employeeProfile : ldapServerIntegrationConfiguration.employeeProfile }'/>' />
+				</div>
+			</div>
+
 			<div class="form-group row">
 				<div class="col-sm-2 control-label">
 					<spring:message
