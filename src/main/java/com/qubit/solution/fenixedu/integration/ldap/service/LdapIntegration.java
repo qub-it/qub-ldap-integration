@@ -117,6 +117,8 @@ public class LdapIntegration {
     private static final String UL_COURSES = "ULCourses";
     private static final String COMMON_NAME = "cn";
 
+    private static final String DEFAULT_BIRTH_DATE = "19000101000000Z";
+
     // Attribute from ULFenixUser class (yes same name..I know)
     // This must old the original username of the user in Fenix
     //
@@ -310,7 +312,7 @@ public class LdapIntegration {
         if (dateOfBirthYearMonthDay != null) {
             attributesMap.add(UL_BIRTH_DATE_ATTRIBUTE, dateOfBirthYearMonthDay.toString("yyyyMMdd") + "000000Z");
         } else {
-            attributesMap.add(UL_BIRTH_DATE_ATTRIBUTE, new DateTime().toString("yyyyMMddHHmmss.SSS") + "Z");
+            attributesMap.add(UL_BIRTH_DATE_ATTRIBUTE, DEFAULT_BIRTH_DATE);
         }
 
         // OPTIONAL

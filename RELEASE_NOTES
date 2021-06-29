@@ -1,3 +1,5 @@
+- Bug fix: When a user has no birth date we are no longer sending the current date but rather 1 January 1900
+
 2.6.0 (17-05-2021)
 - New feature: Allowing to configure a employee profile code
 
