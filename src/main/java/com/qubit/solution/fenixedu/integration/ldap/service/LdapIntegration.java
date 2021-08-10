@@ -371,6 +371,10 @@ public class LdapIntegration {
         return attributesMap;
     }
 
+    private static boolean isAnyRoleActive(final Person person) {
+        return isAlumni(person) || isStudent(person) || isTeacher(person) || isEmployee(person);
+    }
+
     private static boolean isAlumni(final Person person) {
         return !isStudent(person) && person.getStudent() != null;
     }
@@ -846,6 +850,11 @@ public class LdapIntegration {
                         } catch (Throwable t) {
                             t.printStackTrace();
                         }
+                    } else if (person.getUsername().startsWith("bennu") && !isAnyRoleActive(person)
+                            && !getCorrectCN(person.getUsername(), client).equals(person.getUsername())) {
+                        logger.debug("Reverting cn for " + person.getUsername() + " in ldap");
+                        LdapIntegration.deleteUser(person);
+                        LdapIntegration.createPersonInLdap(person);
                     }
                 }
                 ableToSend = true;
