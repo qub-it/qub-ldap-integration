@@ -371,10 +371,6 @@ public class LdapIntegration {
         return attributesMap;
     }
 
-    private static boolean isAnyRoleActive(final Person person) {
-        return isAlumni(person) || isStudent(person) || isTeacher(person) || isEmployee(person);
-    }
-
     private static boolean isAlumni(final Person person) {
         return !isStudent(person) && person.getStudent() != null;
     }
@@ -850,8 +846,7 @@ public class LdapIntegration {
                         } catch (Throwable t) {
                             t.printStackTrace();
                         }
-                    } else if (person.getUsername().startsWith("bennu") && !isAnyRoleActive(person)
-                            && !getCorrectCN(person.getUsername(), client).equals(person.getUsername())) {
+                    } else if (shouldUsernameBeReset(client, person)) {
                         logger.debug("Reverting cn for " + person.getUsername() + " in ldap");
                         LdapIntegration.deleteUser(person);
                         LdapIntegration.createPersonInLdap(person);
@@ -863,6 +858,28 @@ public class LdapIntegration {
             client.logout();
         }
         return ableToSend;
+    }
+
+    private static boolean shouldUsernameBeReset(LdapClient client, Person person) {
+        //  We want to reset the username @ ldap when the following criteria are met:
+        //
+        // 1. Are in pending state (user CN is it's identification document) [cnIsIdDocument]
+        // 2. Never logged-in in the system (username is bennu)              [isUsernameStillBennu]
+        // 3. They are not students, teachers or employees                   [noRelevanteRolesActive]
+        //
+        // These conditions were fine tuned with Daniela Mendes from SC
+        // 
+        // 1 September 2021 - Paulo Abrantes
+        //
+
+        String userCN = getCorrectCN(person.getUsername(), client);
+        String userIDDocument = person.getDocumentIdNumber();
+
+        boolean cnIsIdDocument = userCN.equals(userIDDocument);
+        boolean isUsernameStillBennu = person.getUsername().startsWith("bennu");
+        boolean noRelevanteRolesActive = !isStudent(person) & !isTeacher(person) && !isEmployee(person);
+
+        return cnIsIdDocument && isUsernameStillBennu && noRelevanteRolesActive;
     }
 
     public static boolean updatePersonInLdap(final Person person) {
