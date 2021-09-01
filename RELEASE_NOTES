@@ -1,3 +1,5 @@
+- Bug fix: Corrected condition for reverting users in ldap
+
 2.6.2 (10-08-2021)
 - Improvement: Usernames that are no longer active and are still bennu in the system but not bennu in ldap will be reverted in ldap back to the bennu user
 
