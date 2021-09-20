@@ -1,3 +1,5 @@
+- Improvement: Introduced new cron task RetrieveInstitutionalEmailTask
+
 2.6.3 (01-09-2021)
 - Bug fix: Corrected condition for reverting users in ldap
 
