@@ -50,7 +50,9 @@ public class LdapIntegrationInitializer implements ServletContextListener {
 
             @Override
             public void deleting(Person person) {
-                LdapIntegration.deleteUser(person);
+                if (Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration() != null) {
+                    LdapIntegration.deleteUser(person);
+                }
             }
         });
         StudentAccessServices.subscribeSyncPerson(new SyncPersonWithLdap());
