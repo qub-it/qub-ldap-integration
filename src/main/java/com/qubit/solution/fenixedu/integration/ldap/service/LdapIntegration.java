@@ -63,7 +63,6 @@ import org.fenixedu.commons.i18n.LocalizedString;
 import org.fenixedu.ulisboa.specifications.ULisboaConfiguration;
 import org.fenixedu.ulisboa.specifications.domain.student.ActiveStudentOverride;
 import org.fenixedu.ulisboa.specifications.service.StudentActive;
-import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonthDay;
 import org.slf4j.Logger;
@@ -380,16 +379,21 @@ public class LdapIntegration {
     }
 
     private static boolean isTeacher(final Person person) {
-        ExecutionYear readCurrentExecutionYear = ExecutionYear.readCurrentExecutionYear();
-        ExecutionYear previousExecutionYear = readCurrentExecutionYear.getPreviousExecutionYear();
-
         List<AcademicInterval> intervals = new ArrayList<>();
-        intervals.add(readCurrentExecutionYear.getAcademicInterval());
-        intervals.add(previousExecutionYear.getAcademicInterval());
-        intervals.addAll(readCurrentExecutionYear.getExecutionPeriodsSet().stream().map(ExecutionInterval::getAcademicInterval)
-                .collect(Collectors.toList()));
-        intervals.addAll(previousExecutionYear.getExecutionPeriodsSet().stream().map(ExecutionInterval::getAcademicInterval)
-                .collect(Collectors.toList()));
+
+        for (ExecutionYear aCurrentExecutionYear : ExecutionYear.findCurrents()) {
+
+            intervals.add(aCurrentExecutionYear.getAcademicInterval());
+            intervals.addAll(aCurrentExecutionYear.getExecutionPeriodsSet().stream().map(ExecutionInterval::getAcademicInterval)
+                    .collect(Collectors.toList()));
+
+            ExecutionYear previousExecutionYear = aCurrentExecutionYear.getPreviousExecutionYear();
+            if (previousExecutionYear != null) {
+                intervals.add(previousExecutionYear.getAcademicInterval());
+                intervals.addAll(previousExecutionYear.getExecutionPeriodsSet().stream()
+                        .map(ExecutionInterval::getAcademicInterval).collect(Collectors.toList()));
+            }
+        }
 
         return person.getTeacher() != null && !person.getTeacher().getTeacherAuthorizationStream()
                 .filter(authorization -> intervals.contains(authorization.getExecutionSemester().getAcademicInterval()))
