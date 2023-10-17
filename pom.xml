@@ -20,14 +20,14 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <version.org.fenixedu.bennu>6.1.4-FORK</version.org.fenixedu.bennu>
+        <version.org.fenixedu.bennu>6.3.0-FORK</version.org.fenixedu.bennu>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>com.qubit.solution.fenixedu</groupId>
             <artifactId>fenixedu-academic-core</artifactId>
-            <version>41.2.1</version>
+            <version>43.0.1</version>
         </dependency>
 
         <dependency>
@@ -69,16 +69,20 @@
         <dependency>
             <groupId>org.fenixedu</groupId> <!-- should be com.qubit.solution.fenixedu -->
             <artifactId>fenixedu-academic-extensions</artifactId>
-            <version>4.20.2</version>
+            <version>4.22.0</version>
         </dependency>
         <dependency>
             <groupId>org.fenixedu.ulisboa</groupId>
             <artifactId>fenixedu-ulisboa-specifications</artifactId>
-            <version>7.2.0</version>
+            <version>7.4.0</version>
         </dependency>
     </dependencies>
 
     <repositories>
+	 <repository>
+          <id>qubIT-oss</id>
+           <url>https://repository-oss.omnis.cloud/nexus/repository/releases/</url>
+        </repository>
         <repository>
             <id>ulisboa-repo</id>
             <url>https://nexjen.ulisboa.pt/nexus/content/groups/public/</url>
