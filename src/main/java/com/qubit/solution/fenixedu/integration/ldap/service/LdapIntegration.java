@@ -619,7 +619,7 @@ public class LdapIntegration {
                 value0 = value0 != null ? value0.substring(0, 9) : null;
                 value1 = value1 != null ? value1.substring(0, 9) : null;
             }
-            if (value0 == null && value1 != null || value0 != null && value1 == null || !value0.equals(value1)) {
+            if ((value0 == null && value1 != null) || (value0 != null && !value0.equals(value1))) {
                 return false;
             }
         }
