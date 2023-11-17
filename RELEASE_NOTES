@@ -1,3 +1,4 @@
+2.8.0 (17-11-2023)
 - Improvement: Massive operations can only be handled either by managers or users with LDAP_INTEGRATION_SETUP permission [UL-REIT-3617]
 - Bug fix: Fixing possible NPE path in LdapIntegration changes detection algorithm
 
