@@ -30,6 +30,7 @@ ${portal.toolkit()}
 	</h1>
 </div>
 <%-- NAVIGATION --%>
+<c:if test="${allowedMassiveOperations}">
 <div class="well well-sm" style="display: inline-block">
 		<span
 		class="glyphicon glyphicon-cog" aria-hidden="true"></span>&nbsp;<a
@@ -49,7 +50,6 @@ ${portal.toolkit()}
 		$('#deleteAllUsersFromLdap').modal('toggle')
 	}
 </script>
-
 
 <div class="modal fade" id="sendAllUsersToLdap">
 	<div class="modal-dialog">
@@ -114,7 +114,7 @@ ${portal.toolkit()}
 	<!-- /.modal-dialog -->
 </div>
 <!-- /.modal -->
-
+</c:if>
 
 	<c:if test="${not empty infoMessages}">
 				<div class="alert alert-info" role="alert">
@@ -215,7 +215,7 @@ ${portal.toolkit()}
 </c:choose>
 
 
-
+<c:if test="${allowedMassiveOperations}">
 <form id="sendAllToLdapForm"
 	action="${pageContext.request.contextPath}/ldap/sync/person/search/sendalluserstoldap/"
 	method="POST"></form>
@@ -224,7 +224,7 @@ ${portal.toolkit()}
 <form id="deleteAllUsersFromLdapForm"
 	action="${pageContext.request.contextPath}/ldap/sync/person/search/removeallusersfromldap/"
 	method="POST"></form>
-	
+</c:if>
 	
 <script>
 	var searchpersonDataSet = [

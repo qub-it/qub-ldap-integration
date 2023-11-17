@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 
 import org.apache.commons.lang.StringUtils;
 import org.fenixedu.academic.domain.Person;
+import org.fenixedu.academic.domain.groups.PermissionService;
 import org.fenixedu.academic.domain.organizationalStructure.Party;
 import org.fenixedu.bennu.core.domain.Bennu;
 import org.fenixedu.bennu.spring.portal.SpringFunctionality;
@@ -29,8 +30,12 @@ import com.qubit.solution.fenixedu.integration.ldap.ui.LdapController;
 @RequestMapping("/ldap/sync/person")
 public class PersonController extends LdapBaseController {
 
+    private static final String SYSADMIN_PERMISSION = "SYSADMIN";
+    private static final String LDAP_INTEGRATION_SETUP = "LDAP_INTEGRATION_SETUP";
+
     @RequestMapping
     public String home(Model model) {
+        model.addAttribute("allowedMassiveOperations", isAllowedMassiveOperations());
         return "forward:/ldap/sync/person/";
     }
 
@@ -43,10 +48,11 @@ public class PersonController extends LdapBaseController {
     }
 
     @RequestMapping(value = "/")
-    public String search(@RequestParam(value = "name", required = false, defaultValue = "") String name, @RequestParam(
-            value = "username", required = false) String username,
+    public String search(@RequestParam(value = "name", required = false, defaultValue = "") String name,
+            @RequestParam(value = "username", required = false) String username,
             @RequestParam(value = "documentidnumber", required = false) String documentIdNumber, Model model) {
 
+        model.addAttribute("allowedMassiveOperations", isAllowedMassiveOperations());
         List<Person> searchpersonResultsDataSet = filterSearchPerson(name, username, documentIdNumber);
         model.addAttribute("searchpersonResultsDataSet", searchpersonResultsDataSet);
         return "ldap/sync/person/search";
@@ -58,8 +64,7 @@ public class PersonController extends LdapBaseController {
         }
 
         Stream<Person> stream =
-                StringUtils.isEmpty(name) ? Party.readAllPersons().stream() : Person.findPersonStream(name,
-                        Integer.MAX_VALUE);
+                StringUtils.isEmpty(name) ? Party.readAllPersons().stream() : Person.findPersonStream(name, Integer.MAX_VALUE);
         return stream.filter(person -> StringUtils.isEmpty(username) || username.equals(person.getUsername()))
                 .filter(person -> StringUtils.isEmpty(documentIdNumber) || documentIdNumber.equals(person.getDocumentIdNumber()))
                 .collect(Collectors.toList());
@@ -70,11 +75,15 @@ public class PersonController extends LdapBaseController {
         return "redirect:/ldap/sync/person/syncPerson" + "/" + person.getExternalId();
     }
 
+    private boolean isAllowedMassiveOperations() {
+        return PermissionService.hasAccess(SYSADMIN_PERMISSION) || PermissionService.hasAccess(LDAP_INTEGRATION_SETUP);
+    }
+
     @RequestMapping(value = "/search/sendalluserstoldap", method = RequestMethod.POST)
     public String processSearchToSendAllUsers(Model model) {
         LdapServerIntegrationConfiguration defaultLdapServerIntegrationConfiguration =
                 Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration();
-        if (defaultLdapServerIntegrationConfiguration != null) {
+        if (defaultLdapServerIntegrationConfiguration != null && isAllowedMassiveOperations()) {
             defaultLdapServerIntegrationConfiguration.sendAllUsers();
         }
 
@@ -85,7 +94,7 @@ public class PersonController extends LdapBaseController {
     public String processSearchToRemoveAllUsers(Model model) {
         LdapServerIntegrationConfiguration defaultLdapServerIntegrationConfiguration =
                 Bennu.getInstance().getDefaultLdapServerIntegrationConfiguration();
-        if (defaultLdapServerIntegrationConfiguration != null) {
+        if (defaultLdapServerIntegrationConfiguration != null && isAllowedMassiveOperations()) {
             defaultLdapServerIntegrationConfiguration.deleteAllUsers();
         }
         return "ldap/sync/person/search";

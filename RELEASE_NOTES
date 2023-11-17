@@ -1,3 +1,5 @@
+- Improvement: Massive operations can only be handled either by managers or users with LDAP_INTEGRATION_SETUP permission [UL-REIT-3617]
+
 2.7.2 (18-07-2022)
 - Bug fix: Correctly handling calendars entries when detecting professorships
 
