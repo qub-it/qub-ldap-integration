@@ -40,6 +40,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
@@ -323,9 +324,13 @@ public class LdapIntegration {
         // validated yet.
         //
         // 25 August 2015
-        Optional<? extends PartyContact> personalEmail =
-                person.getPartyContactsSet().stream().filter(partyContact -> partyContact instanceof EmailAddress
-                        && Boolean.TRUE.equals(partyContact.getActive()) && partyContact.isPersonalType()).findFirst();
+        Predicate<PartyContact> contactPredicate = partyContact -> partyContact instanceof EmailAddress
+                && Boolean.TRUE.equals(partyContact.getActive()) && partyContact.isPersonalType();
+
+        Optional<? extends PartyContact> personalEmail = person.getPartyContactsSet().stream()
+                .filter(partyContact -> contactPredicate.test(partyContact) && partyContact.isDefault()).findFirst()
+                .or(() -> person.getPartyContactsSet().stream().filter(contactPredicate).findFirst());
+
         if (personalEmail.isPresent()) {
             attributesMap.add(UL_EXTERNAL_EMAIL_ADDR_ATTRIBUTE, personalEmail.get().getPresentationValue());
         } else {
