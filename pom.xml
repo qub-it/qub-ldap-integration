@@ -18,63 +18,58 @@
 
     <name>fenixedu-ulisboa-ldapIntegration</name>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <version.org.fenixedu.bennu>6.3.0-FORK</version.org.fenixedu.bennu>
-    </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.qubit.solution.fenixedu</groupId>
+                <artifactId>fenixedu-oss-dependency-management</artifactId>
+                <version>9</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
             <groupId>com.qubit.solution.fenixedu</groupId>
             <artifactId>fenixedu-academic-core</artifactId>
-            <version>43.0.1</version>
         </dependency>
-
         <dependency>
             <groupId>org.fenixedu</groupId>
             <artifactId>bennu-core</artifactId>
-            <version>${version.org.fenixedu.bennu}</version>
         </dependency>
         <dependency>
             <groupId>org.fenixedu</groupId>
             <artifactId>bennu-scheduler</artifactId>
-            <version>${version.org.fenixedu.bennu}</version>
         </dependency>
         <dependency>
             <groupId>org.fenixedu</groupId>
             <artifactId>bennu-portal</artifactId>
-            <version>${version.org.fenixedu.bennu}</version>
         </dependency>
         <dependency>
             <groupId>org.fenixedu</groupId>
             <artifactId>bennu-io</artifactId>
-            <version>${version.org.fenixedu.bennu}</version>
         </dependency>
         <dependency>
             <groupId>org.fenixedu</groupId>
             <artifactId>bennu-spring</artifactId>
-            <version>${version.org.fenixedu.bennu}</version>
         </dependency>
         <dependency>
             <groupId>org.fenixedu</groupId>
             <artifactId>bennu-cas-client</artifactId>
-            <version>${version.org.fenixedu.bennu}</version>
         </dependency>
-
         <dependency>
             <groupId>com.qubit.terra</groupId>
             <artifactId>ldap-client</artifactId>
-            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.fenixedu</groupId> <!-- should be com.qubit.solution.fenixedu -->
             <artifactId>fenixedu-academic-extensions</artifactId>
-            <version>4.22.0</version>
         </dependency>
         <dependency>
             <groupId>org.fenixedu.ulisboa</groupId>
             <artifactId>fenixedu-ulisboa-specifications</artifactId>
-            <version>7.4.0</version>
         </dependency>
     </dependencies>
 
