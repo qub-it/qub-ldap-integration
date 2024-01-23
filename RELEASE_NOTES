@@ -1,3 +1,4 @@
+2.10.0 (23-01-2024)
 - New feature: Introducing task to ensure that if ULInternalEmailAddr<school> does not match mail field, it gets updated.  [#UL-FF-3145]
 - Improvement: Adds OSS DM [#qubIT-Omnis-4736]
 
