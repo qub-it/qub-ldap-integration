@@ -62,7 +62,6 @@ import org.fenixedu.bennu.core.domain.User;
 import org.fenixedu.bennu.core.groups.DynamicGroup;
 import org.fenixedu.commons.i18n.LocalizedString;
 import org.fenixedu.ulisboa.specifications.ULisboaConfiguration;
-import org.fenixedu.ulisboa.specifications.domain.student.ActiveStudentOverride;
 import org.fenixedu.ulisboa.specifications.service.StudentActive;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonthDay;
@@ -251,11 +250,7 @@ public class LdapIntegration {
     // 30 July 2015 - Paulo Abrantes
     private static void collecStudentAttributes(final Student student, final AttributesMap attributesMap) {
         Person person = student.getPerson();
-        ActiveStudentOverride overrideFor = ActiveStudentOverride.getOverrideFor(person);
         String studentNumber = String.valueOf(student.getNumber());
-        if (overrideFor != null && !StringUtils.isEmpty(overrideFor.getOldStudentNumber())) {
-            studentNumber = overrideFor.getOldStudentNumber();
-        }
 
         attributesMap.add(UL_STUDENT_CODE + getSchoolCode(), studentNumber);
         if (isStudent(student.getPerson())) {
