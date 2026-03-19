@@ -66,7 +66,8 @@ public class PersonController extends LdapBaseController {
         Stream<Person> stream =
                 StringUtils.isEmpty(name) ? Party.readAllPersons().stream() : Person.findPersonStream(name, Integer.MAX_VALUE);
         return stream.filter(person -> StringUtils.isEmpty(username) || username.equals(person.getUsername()))
-                .filter(person -> StringUtils.isEmpty(documentIdNumber) || documentIdNumber.equals(person.getDocumentIdNumber()))
+                .filter(person -> StringUtils.isEmpty(documentIdNumber) || documentIdNumber.equals(
+                        person.getDefaultIdentificationDocument().getValue()))
                 .collect(Collectors.toList());
     }
 
