@@ -172,7 +172,7 @@ ${portal.toolkit()}
 </div>	
 </div>		
 <div class="form-group row">
-<div class="col-sm-2 control-label"><spring:message code="label.Person.idDocumentNumbber"/></div> 
+<div class="col-sm-2 control-label"><spring:message code="label.Person.idDocumentNumber"/></div>
 
 <div class="col-sm-10">
 	<input id="person_idDocumentNumbber" class="form-control" type="text" name="documentidnumber"  value='<c:out value='${not empty param.documentidnumber ? param.documentidnumber : person.documentIdNumber }'/>' />
@@ -234,7 +234,7 @@ ${portal.toolkit()}
 				"DT_RowId" : '<c:out value='${searchResult.externalId}'/>',
 "name" : "<c:out value='${searchResult.name}'/>",
 "username" : "<c:out value='${searchResult.username}'/>",
-"documentidnumber" : "<c:out value='${searchResult.documentIdNumber}'/>",
+"documentidnumber" : "<c:out value='${searchResult.defaultIdentificationDocument.value}'/>",
 "actions" :
 " <a  class=\"btn btn-default btn-xs\" href=\"${pageContext.request.contextPath}/ldap/sync/person/search/view/${searchResult.externalId}\"><spring:message code='label.view'/></a>" +
                 "" },

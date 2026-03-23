@@ -302,7 +302,7 @@ public class LdapIntegration {
         } else {
             attributesMap.add(LAST_NAME_ATTRIBUTE, "-");
         }
-        attributesMap.add(UL_BI_ATTRIBUTE, person.getDocumentIdNumber());
+        attributesMap.add(UL_BI_ATTRIBUTE, person.getDefaultIdentificationDocument().getValue());
         YearMonthDay dateOfBirthYearMonthDay = person.getDateOfBirthYearMonthDay();
         if (dateOfBirthYearMonthDay != null) {
             attributesMap.add(UL_BIRTH_DATE_ATTRIBUTE, dateOfBirthYearMonthDay.toString("yyyyMMdd") + "000000Z");
@@ -877,7 +877,7 @@ public class LdapIntegration {
         //
 
         String userCN = getCorrectCN(person.getUsername(), client);
-        String userIDDocument = person.getDocumentIdNumber();
+        String userIDDocument = person.getDefaultIdentificationDocument().getValue();
 
         boolean cnIsIdDocument = userCN.equals(userIDDocument);
         boolean isUsernameStillBennu = person.getUsername().startsWith("bennu");
@@ -975,8 +975,9 @@ public class LdapIntegration {
             }
         }
 
-        if (!StringUtils.isEmpty(documentID) && !person.getDocumentIdNumber().equals(documentID)) {
-            person.setDocumentIdNumber(documentID);
+        if (!StringUtils.isEmpty(documentID) && !documentID.equals(person.getDefaultIdentificationDocument().getValue())) {
+            person.setIdentificationDocument(documentID,
+                    person.getDefaultIdentificationDocument().getIdentificationDocumentType());
         }
 
         if (!StringUtils.isEmpty(sex)) {
