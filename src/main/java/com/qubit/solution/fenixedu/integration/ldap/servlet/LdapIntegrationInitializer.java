@@ -8,7 +8,7 @@
  *
  * Contributors: paulo.abrantes@qub-it.com
  *
- * 
+ *
  * This file is part of FenixEdu fenixedu-ulisboa-ldapIntegration.
  *
  * FenixEdu fenixedu-ulisboa-ldapIntegration is free software: you can redistribute it and/or modify
@@ -57,14 +57,14 @@ public class LdapIntegrationInitializer implements ServletContextListener {
         });
         StudentAccessServices.subscribeSyncPerson(new SyncPersonWithLdap());
 
-        migrateLoginFlag();
+        migrateUseNewULCourseFormat();
 
     }
 
     @Atomic
-    private void migrateLoginFlag() {
-        Bennu.getInstance().getLdapServerIntegrationConfigurationsSet().stream().filter(s -> s.getAllowNonBennusToLogin() == null)
-                .forEach(s -> s.setAllowNonBennusToLogin(true));
+    private void migrateUseNewULCourseFormat() {
+        Bennu.getInstance().getLdapServerIntegrationConfigurationsSet().stream().filter(s -> s.getUseCoursesNewFormat() == null)
+                .forEach(s -> s.setUseCoursesNewFormat(false));
     }
 
     @Override

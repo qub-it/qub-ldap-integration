@@ -172,6 +172,8 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
             @RequestParam(value = "numberOfWorkers", required = false) java.lang.Integer numberOfWorkers,
             @RequestParam(value = "allowNonBennusToLogin", required = false,
                     defaultValue = "false") java.lang.Boolean allowNonBennusToLogin,
+            @RequestParam(value = "useCoursesNewFormat", required = false,
+                    defaultValue = "false") java.lang.Boolean useCoursesNewFormat,
             @RequestParam(value = "employeeProfile", required = false) java.lang.String employeeProfile, Model model) {
 
         if (!password.equals(passwordConfirmation)) {
@@ -183,7 +185,7 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
 
         try {
             ldapServerIntegrationConfiguration = createLdapServerIntegrationConfiguration(serverID, username, password, url,
-                    baseDomain, employeeProfile, numberOfWorkers, allowNonBennusToLogin);
+                    baseDomain, employeeProfile, numberOfWorkers, allowNonBennusToLogin, useCoursesNewFormat);
         } catch (DomainException e) {
             addErrorMessage(e.getMessage(), model);
             return create(model);
@@ -197,11 +199,13 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
     @Atomic
     public LdapServerIntegrationConfiguration createLdapServerIntegrationConfiguration(java.lang.String serverID,
             java.lang.String username, java.lang.String password, java.lang.String url, java.lang.String baseDomain,
-            String employeeProfile, Integer numberOfWorkers, Boolean allowNonBennusToLogin) {
+            String employeeProfile, Integer numberOfWorkers, Boolean allowNonBennusToLogin,
+            Boolean useCoursesNewFormat) {
         LdapServerIntegrationConfiguration ldapServerIntegrationConfiguration =
                 new LdapServerIntegrationConfiguration(serverID, username, password, url, baseDomain);
         ldapServerIntegrationConfiguration.setNumberOfWorkers(numberOfWorkers);
         ldapServerIntegrationConfiguration.setAllowNonBennusToLogin(allowNonBennusToLogin);
+        ldapServerIntegrationConfiguration.setUseCoursesNewFormat(useCoursesNewFormat);
         ldapServerIntegrationConfiguration.setEmployeeProfile(employeeProfile);
         return ldapServerIntegrationConfiguration;
     }
@@ -230,6 +234,8 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
             @RequestParam(value = "numberOfWorkers", required = false) java.lang.Integer numberOfWorkers,
             @RequestParam(value = "allowNonBennusToLogin", required = false,
                     defaultValue = "false") java.lang.Boolean allowNonBennusToLogin,
+            @RequestParam(value = "useCoursesNewFormat", required = false,
+                    defaultValue = "false") java.lang.Boolean useCoursesNewFormat,
             @RequestParam(value = "employeeProfile", required = false) java.lang.String employeeProfile, Model model) {
 
         if (!password.equals(passwordConfirmation)) {
@@ -239,7 +245,7 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
 
         setLdapServerIntegrationConfiguration(ldapServerIntegrationConfiguration, model);
         updateLdapServerIntegrationConfiguration(serverID, username, password, url, baseDomain, employeeProfile, numberOfWorkers,
-                allowNonBennusToLogin, model);
+                allowNonBennusToLogin, useCoursesNewFormat, model);
 
         return "redirect:/ldap/ldapconfiguration/ldapserverintegrationconfiguration/read/"
                 + getLdapServerIntegrationConfiguration(model).getExternalId();
@@ -249,7 +255,7 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
     @Atomic
     public void updateLdapServerIntegrationConfiguration(java.lang.String serverID, java.lang.String username,
             java.lang.String password, java.lang.String url, java.lang.String baseDomain, String employeeProfile,
-            Integer numberOfWorkers, Boolean allowNonBennusToLogin, Model m) {
+            Integer numberOfWorkers, Boolean allowNonBennusToLogin, Boolean useCoursesNewFormat, Model m) {
         getLdapServerIntegrationConfiguration(m).setServerID(serverID);
         getLdapServerIntegrationConfiguration(m).setUsername(username);
         getLdapServerIntegrationConfiguration(m).setPassword(password);
@@ -258,5 +264,6 @@ public class LdapServerIntegrationConfigurationController extends LdapBaseContro
         getLdapServerIntegrationConfiguration(m).setEmployeeProfile(employeeProfile);
         getLdapServerIntegrationConfiguration(m).setNumberOfWorkers(numberOfWorkers);
         getLdapServerIntegrationConfiguration(m).setAllowNonBennusToLogin(allowNonBennusToLogin);
+        getLdapServerIntegrationConfiguration(m).setUseCoursesNewFormat(useCoursesNewFormat);
     }
 }
