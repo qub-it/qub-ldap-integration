@@ -1,3 +1,5 @@
+- New feature: Introducing support for a new ULCourses format [#UL-REIT-4993]
+
 2.11.2 (23-03-2026)
 - Refactor: Replace old id document references with identification document [#qubIT-Fenix-6491]
 
