@@ -1,10 +1,10 @@
 <%--
  * This file was created by Quorum Born IT <http://www.qub-it.com/> and its 
  * copyright terms are bind to the legal agreement regulating the FenixEdu@ULisboa 
- * software development project between Quorum Born IT and Serviços Partilhados da
+ * software development project between Quorum Born IT and ServiÃ§os Partilhados da
  * Universidade de Lisboa:
- *  - Copyright © 2015 Quorum Born IT (until any Go-Live phase)
- *  - Copyright © 2015 Universidade de Lisboa (after any Go-Live phase)
+ *  - Copyright Â© 2015 Quorum Born IT (until any Go-Live phase)
+ *  - Copyright Â© 2015 Universidade de Lisboa (after any Go-Live phase)
  *
  * Contributors: paulo.abrantes@qub-it.com
  *
@@ -183,11 +183,38 @@
 						value='<c:out value='${not empty param.numberOfWorkers ? param.numberOfWorkers : ldapServerIntegrationConfiguration.numberOfWorkers }'/>' />
 				</div>
 			</div>
-				<div class="form-group row">
+			<div class="form-group row">
 				<div class="col-sm-2 control-label">
 					<spring:message
 						code="label.LdapServerIntegrationConfiguration.allowNonBennusToLogin" />
 				</div>
+
+				<div class="col-sm-10">
+					<input id="ldapServerIntegrationConfiguration_allowNonBennusToLogin"
+						type="checkbox" 
+						<c:if test="${(not empty param.allowNonBennusToLogin && param.allowNonBennusToLogin) || (empty param.allowNonBennusToLogin && ldapServerIntegrationConfiguration.allowNonBennusToLogin) }">
+						checked
+						</c:if>
+						name="allowNonBennusToLogin"/>
+				</div>
+			</div>
+			
+			<div class="form-group row">
+				<div class="col-sm-2 control-label">
+					<spring:message
+						code="label.LdapServerIntegrationConfiguration.useCoursesNewFormat" />
+				</div>
+
+				<div class="col-sm-10">
+					<input id="ldapServerIntegrationConfiguration_useCoursesNewFormat"
+						type="checkbox" 
+						<c:if test="${(not empty param.useCoursesNewFormat && param.useCoursesNewFormat) || (empty param.useCoursesNewFormat && ldapServerIntegrationConfiguration.useCoursesNewFormat) }">
+						checked
+						</c:if>
+						name="useCoursesNewFormat"/>
+				</div>
+			</div>
+			</div>
 
 				<div class="col-sm-10">
 					<input id="ldapServerIntegrationConfiguration_allowNonBennusToLogin"

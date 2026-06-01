@@ -66,6 +66,7 @@ public class LdapServerIntegrationConfiguration extends LdapServerIntegrationCon
         }
         setEmployeeProfile(null);
         setAllowNonBennusToLogin(true);
+        setUseCoursesNewFormat(false);
     }
 
     public boolean isNonBennuUserAllowedToLogin() {

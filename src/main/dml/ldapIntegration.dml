@@ -36,6 +36,7 @@ class configuration.LdapServerIntegrationConfiguration {
 	String employeeProfile;
 	Integer numberOfWorkers;
 	Boolean allowNonBennusToLogin;
+	Boolean useCoursesNewFormat;
 }
 
 relation LdapIntegrationConfigurationRootDomainObject {

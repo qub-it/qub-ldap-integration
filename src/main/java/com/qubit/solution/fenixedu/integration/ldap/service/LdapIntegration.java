@@ -248,7 +248,8 @@ public class LdapIntegration {
     // singleshot.
     //
     // 30 July 2015 - Paulo Abrantes
-    private static void collecStudentAttributes(final Student student, final AttributesMap attributesMap) {
+    private static void collecStudentAttributes(final Student student, final AttributesMap attributesMap,
+            final LdapServerIntegrationConfiguration configuration) {
         Person person = student.getPerson();
         String studentNumber = String.valueOf(student.getNumber());
 
@@ -257,8 +258,13 @@ public class LdapIntegration {
             List<String> courses = new ArrayList<>();
             for (Registration registration : student.getActiveRegistrations()) {
                 try {
-                    courses.add(registration.getDegreeCurricularPlanName() + " " + registration.getDegreeType().getName() + " "
-                            + registration.getDegreeName());
+                    if (Boolean.TRUE.equals(configuration.getUseCoursesNewFormat())) {
+                        courses.add(registration.getDegreeType().getCode() + " | " + registration.getDegreeCurricularPlanName()
+                                + " | " + registration.getDegreeName() + " | " + registration.getDegree().getCode());
+                    } else {
+                        courses.add(registration.getDegreeCurricularPlanName() + " " + registration.getDegreeType().getName()
+                                + " " + registration.getDegreeName());
+                    }
                 } catch (java.lang.Throwable t) {
                     courses.add("Error retrieving course");
                 }
@@ -272,14 +278,16 @@ public class LdapIntegration {
 
     // Collects data from a student, these are fields from ULAUXFac<School> ldap
     // class
-    private static AttributesMap collectAttributeMap(final Student student) {
+    private static AttributesMap collectAttributeMap(final Student student,
+            final LdapServerIntegrationConfiguration configuration) {
         AttributesMap attributesMap = new AttributesMap();
-        collecStudentAttributes(student, attributesMap);
+        collecStudentAttributes(student, attributesMap, configuration);
         return attributesMap;
     }
 
     // Collects data from a person, these are fields from ULAuxUser ldap class
-    private static AttributesMap collectAttributeMap(final Person person) {
+    private static AttributesMap collectAttributeMap(final Person person,
+            final LdapServerIntegrationConfiguration configuration) {
         String schooldCode = getSchoolCode();
 
         AttributesMap attributesMap = new AttributesMap();
@@ -364,7 +372,7 @@ public class LdapIntegration {
         }
 
         if (person.getStudent() != null) {
-            collecStudentAttributes(person.getStudent(), attributesMap);
+            collecStudentAttributes(person.getStudent(), attributesMap, configuration);
         }
 
         return attributesMap;
@@ -530,7 +538,8 @@ public class LdapIntegration {
         if (personCN == null) {
             personCN = getCorrectCN(student.getPerson().getUsername(), ldapClient);
         }
-        return retrieveSyncInfo(collectAttributeMap(student), STUDENT_FIELDS_TO_SYNC, personCN, ldapClient, defaultConfiguration);
+        return retrieveSyncInfo(collectAttributeMap(student, defaultConfiguration), STUDENT_FIELDS_TO_SYNC, personCN, ldapClient,
+                defaultConfiguration);
     }
 
     public static Map<String, String[]> retrieveSyncInformation(final Person person) {
@@ -557,7 +566,8 @@ public class LdapIntegration {
         if (personCN == null) {
             personCN = getCorrectCN(person.getUsername(), ldapClient);
         }
-        return retrieveSyncInfo(collectAttributeMap(person), PERSON_FIELDS_TO_SYNC, personCN, ldapClient, defaultConfiguration);
+        return retrieveSyncInfo(collectAttributeMap(person, defaultConfiguration), PERSON_FIELDS_TO_SYNC, personCN, ldapClient,
+                defaultConfiguration);
     }
 
     private static StringBuilder concatenateValues(final List<String> list) {
@@ -768,7 +778,7 @@ public class LdapIntegration {
         LdapClient client = configuration.getClient();
         if (client.login()) {
             try {
-                AttributesMap attributesMap = collectAttributeMap(student);
+                AttributesMap attributesMap = collectAttributeMap(student, configuration);
                 client.replaceInExistingContext(getPersonCommonName(person, client, configuration),
                         Arrays.asList(OBJECT_CLASSES_TO_ADD), attributesMap);
                 ableToUpdateStudent = true;
@@ -829,7 +839,7 @@ public class LdapIntegration {
                     if (!isPersonAvailableInLdap(person, client, configuration)) {
                         List<String> objectClasses = new ArrayList<String>(Arrays.asList(OBJECT_CLASSES_TO_ADD));
                         try {
-                            AttributesMap collectAttributeMap = collectAttributeMap(person);
+                            AttributesMap collectAttributeMap = collectAttributeMap(person, configuration);
                             // Only when creating the person we want to add this
                             // field
                             // afterwards we want this field to stay put.
@@ -845,7 +855,7 @@ public class LdapIntegration {
                         List<String> objectClasses = new ArrayList<String>(Arrays.asList(OBJECT_CLASSES_TO_ADD));
                         try {
                             logger.debug("Updating " + person.getUsername() + " in ldap");
-                            client.replaceInExistingContext(personCommonName, objectClasses, collectAttributeMap(person));
+                            client.replaceInExistingContext(personCommonName, objectClasses, collectAttributeMap(person, configuration));
                             ableToSend = true;
                         } catch (Throwable t) {
                             t.printStackTrace();

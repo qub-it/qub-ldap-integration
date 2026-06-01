@@ -1,10 +1,10 @@
 <%--
  * This file was created by Quorum Born IT <http://www.qub-it.com/> and its 
  * copyright terms are bind to the legal agreement regulating the FenixEdu@ULisboa 
- * software development project between Quorum Born IT and Serviços Partilhados da
+ * software development project between Quorum Born IT and ServiÃ§os Partilhados da
  * Universidade de Lisboa:
- *  - Copyright © 2015 Quorum Born IT (until any Go-Live phase)
- *  - Copyright © 2015 Universidade de Lisboa (after any Go-Live phase)
+ *  - Copyright Â© 2015 Quorum Born IT (until any Go-Live phase)
+ *  - Copyright Â© 2015 Universidade de Lisboa (after any Go-Live phase)
  *
  * Contributors: paulo.abrantes@qub-it.com
  *
@@ -143,6 +143,12 @@ ${portal.toolkit()}
 	<th scope="row" class="col-xs-3"><spring:message code="label.LdapServerIntegrationConfiguration.allowNonBennusToLogin"/></th> 
 	<td>
 		<spring:message code='label.${ldapServerIntegrationConfiguration.allowNonBennusToLogin}'/>
+	</td> 
+</tr>
+<tr>
+	<th scope="row" class="col-xs-3"><spring:message code="label.LdapServerIntegrationConfiguration.useCoursesNewFormat"/></th> 
+	<td>
+		<spring:message code='label.${ldapServerIntegrationConfiguration.useCoursesNewFormat}'/>
 	</td> 
 </tr>
 </tbody>
