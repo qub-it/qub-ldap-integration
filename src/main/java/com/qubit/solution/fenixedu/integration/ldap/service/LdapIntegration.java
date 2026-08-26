@@ -256,7 +256,7 @@ public class LdapIntegration {
         attributesMap.add(UL_STUDENT_CODE + getSchoolCode(), studentNumber);
         if (isStudent(student.getPerson())) {
             List<String> courses = new ArrayList<>();
-            for (Registration registration : student.getActiveRegistrations()) {
+            for (Registration registration : student.getActiveRegistrationStream().toList()) {
                 try {
                     if (Boolean.TRUE.equals(configuration.getUseCoursesNewFormat())) {
                         courses.add(registration.getDegreeType().getCode() + " | " + registration.getDegreeCurricularPlanName()
