@@ -968,7 +968,7 @@ public class LdapIntegration {
         List<? extends PartyContact> personalEmails = person.getPartyContacts(EmailAddress.class, PartyContactType.PERSONAL);
         if (!StringUtils.isEmpty(personalEmail)
                 && personalEmails.stream().filter(email -> email.getPresentationValue().equals(personalEmail)).count() == 0) {
-            EmailAddress.createEmailAddress(person, personalEmail, PartyContactType.PERSONAL, false);
+            EmailAddress.create(person, personalEmail, PartyContactType.PERSONAL, false);
         }
 
         if (!StringUtils.isEmpty(birthDate)) {
