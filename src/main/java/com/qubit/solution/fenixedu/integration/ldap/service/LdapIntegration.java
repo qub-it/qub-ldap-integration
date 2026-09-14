@@ -65,9 +65,9 @@ import org.fenixedu.ulisboa.specifications.ULisboaConfiguration;
 import org.fenixedu.ulisboa.specifications.service.StudentActive;
 import org.joda.time.LocalDate;
 import org.joda.time.YearMonthDay;
+import org.joda.time.format.DateTimeFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.format.datetime.joda.DateTimeFormatterFactory;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -976,7 +976,7 @@ public class LdapIntegration {
             if (birthDate.contains(".")) {
                 format = "yyyyMMddHHmmss.SSS'Z'";
             }
-            LocalDate parseLocalDate = new DateTimeFormatterFactory(format).createDateTimeFormatter().parseLocalDate(birthDate);
+            LocalDate parseLocalDate = DateTimeFormat.forPattern(format).parseLocalDate(birthDate);
             YearMonthDay dateOfBirthYearMonthDay = person.getDateOfBirthYearMonthDay();
             if (dateOfBirthYearMonthDay == null || !parseLocalDate.isEqual(dateOfBirthYearMonthDay)) {
                 YearMonthDay yearMonthDay = new YearMonthDay(parseLocalDate.getYear(), parseLocalDate.getMonthOfYear(),
