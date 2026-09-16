@@ -404,7 +404,7 @@ public class LdapIntegration {
         }
 
         return person.getTeacher() != null && !person.getTeacher().getTeacherAuthorizationStream()
-                .filter(authorization -> intervals.contains(authorization.getExecutionSemester().getAcademicInterval()))
+                .filter(authorization -> intervals.contains(authorization.getExecutionInterval().getAcademicInterval()))
                 .collect(Collectors.toList()).isEmpty();
     }
 
