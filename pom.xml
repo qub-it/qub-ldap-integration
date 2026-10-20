@@ -13,7 +13,7 @@
 
     <groupId>com.qubit.solution.fenixedu</groupId>
     <artifactId>fenixedu-ulisboa-ldapIntegration</artifactId>
-    <version>2.12.3</version>
+    <version>3.0.0</version>
     <packaging>jar</packaging>
 
     <name>fenixedu-ulisboa-ldapIntegration</name>
@@ -23,7 +23,7 @@
             <dependency>
                 <groupId>com.qubit.solution.fenixedu</groupId>
                 <artifactId>fenixedu-oss-dependency-management</artifactId>
-                <version>791</version>
+                <version>792</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
