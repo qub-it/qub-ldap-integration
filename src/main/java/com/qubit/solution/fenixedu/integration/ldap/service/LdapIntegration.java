@@ -986,7 +986,7 @@ public class LdapIntegration {
         }
 
         if (!StringUtils.isEmpty(documentID) && !documentID.equals(person.getDefaultIdentificationDocument().getValue())) {
-            person.setIdentificationDocument(documentID,
+            person.setIdentification(documentID,
                     person.getDefaultIdentificationDocument().getIdentificationDocumentType());
         }
 
